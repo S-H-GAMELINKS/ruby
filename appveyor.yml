@@ -1,6 +1,10 @@
 ---
 version: '{build}'
-shallow_clone: true
+
+only_commits:
+  message: /CI Build/
+  author: ruby@localhost.com  
+
 clone_depth: 10
 platform:
   - x64
