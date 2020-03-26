@@ -1,10 +1,5 @@
 ---
 version: '{build}'
-
-only_commits:
-  message: /CI Build/
-  author: ruby@localhost.com  
-
 clone_depth: 10
 platform:
   - x64
@@ -42,6 +37,8 @@ for:
     - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\mingw64\bin;C:\msys64\usr\bin
     - ruby --version
     - 'cl'
+    - git config --global user.name Ruby
+    - git config --global user.email ruby@localhost.com
     - echo> Makefile srcdir=.
     - echo>> Makefile MSC_VER=0
     - echo>> Makefile RT=none
