@@ -1,8 +1,5 @@
 ---
 version: '{build}'
-init:
-  - git config --global user.name git
-  - git config --global user.email svn-admin@ruby-lang.org
 clone_depth: 10
 platform:
   - x64
@@ -22,7 +19,6 @@ environment:
       GEMS_FOR_TEST: ""
   RELINE_TEST_ENCODING: "Windows-31J"
   UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
-  GITBRANCH: "appveyor"
 for:
 -
   matrix:
