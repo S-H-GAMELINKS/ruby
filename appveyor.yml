@@ -46,7 +46,7 @@ for:
     - nmake %mflags% touch-unicode-files
     - git diff
     - git log
-    - nmake %mflags% %UPDATE_UNICODE% %GITBRANCH% up incs
+    - nmake %mflags% %UPDATE_UNICODE% %GITBRANCH% checkout incs
     - del Makefile
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
