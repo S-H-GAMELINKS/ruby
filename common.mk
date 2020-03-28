@@ -1260,7 +1260,7 @@ checkout::
 yes::
 no::
 
-update-remote:: checkout-src update-download
+checkout-remote:: checkout-src update-download
 
 up:: update-remote
 
