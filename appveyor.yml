@@ -44,7 +44,9 @@ for:
     - echo>> Makefile BUILTIN_ENCOBJS=nul
     - type win32\Makefile.sub >> Makefile
     - nmake %mflags% touch-unicode-files
-    - nmake %mflags% %UPDATE_UNICODE% %GITBRANCH% checkout incs
+    - git diff
+    - git log
+    - nmake %mflags% %UPDATE_UNICODE% %GITBRANCH% up incs
     - del Makefile
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
