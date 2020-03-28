@@ -499,6 +499,7 @@ HAVE_GIT = no
 !else if exist($(srcdir)/.git)
 VCS = $(GIT)
 VCSUP = $(VCS) pull $(GITPULLOPTIONS)
+VCSCHECKOUT = $(VCS) checkout -b $(GITBRANCH)
 !else
 VCSUP = rem
 !endif
@@ -560,6 +561,9 @@ RBCONFIG      = ./.rbconfig.time
 scriptbin: $(SCRIPTPROGRAMS)
 
 $(SCRIPTPROGRAMS): $(STUBPROGRAM)
+
+checkout-src::
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSCHECKOUT)
 
 update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
