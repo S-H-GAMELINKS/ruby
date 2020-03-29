@@ -36,6 +36,7 @@ for:
     - SET ruby_path=C:\Ruby%ruby_version:-x86=%
     - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\mingw64\bin;C:\msys64\usr\bin
     - ruby --version
+    - git log -2
     - 'cl'
     - echo> Makefile srcdir=.
     - echo>> Makefile MSC_VER=0
