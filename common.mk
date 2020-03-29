@@ -1249,6 +1249,14 @@ dist:
 	-unicode-version=$(UNICODE_VERSION) \
 	tmp $(RELNAME)
 
+checkout:: update-download
+
+checkout::
+	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY "$(REVISION_H)"
+
+checkout::
+	-$(Q)$(MAKE) $(mflags) Q=$(Q) after-update
+
 up:: update-remote
 
 up::
