@@ -1,9 +1,6 @@
 ---
 version: '{build}'
-init:
-  - git config --global user.name git
-  - git config --global user.email svn-admin@ruby-lang.org
-clone_depth: 10
+shallow_clone: true
 platform:
   - x64
 environment:
