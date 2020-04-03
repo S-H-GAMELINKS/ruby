@@ -2924,13 +2924,9 @@ dir_s_glob(rb_execution_context_t *ec, VALUE obj, VALUE pattern, VALUE rflags, V
     VALUE ary = rb_ary_new();
     int flags, sort = 0;
 
-    if (rsort == Qfalse)
-        sort |= FNM_GLOB_NOSORT;
+    if (rsort == Qfalse) sort |= FNM_GLOB_NOSORT;
 
-    if (NUM2INT(rflags) != 0)
 	flags = NUM2INT(rflags);
-    else
-	flags = 0;
     flags |= sort;
 
     if(!NIL_P(base)) {
