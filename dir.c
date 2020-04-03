@@ -2930,7 +2930,7 @@ dir_s_glob(rb_execution_context_t *ec, VALUE obj, VALUE pattern, VALUE rflags, V
 	flags = 0;
     flags |= sort;
 
-    if(TYPE(base) == T_STRING) {
+    if(!NIL_P(base)) {
 	FilePathValue(base);
 	if (!RSTRING_LEN(base)) base = Qnil;
     }
