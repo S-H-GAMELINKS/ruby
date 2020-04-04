@@ -2910,6 +2910,11 @@ dir_s_aref(rb_execution_context_t *ec, VALUE obj, VALUE pattern, VALUE base, VAL
     if (rsort == Qfalse)
         sort |= FNM_GLOB_NOSORT;
 
+    if(!NIL_P(base)) {
+    FilePathValue(base);
+	if (!RSTRING_LEN(base)) base = Qnil;
+    }
+
     ary = rb_check_array_type(pattern);
     if (NIL_P(ary)) {
         VALUE str = rb_ary_entry(pattern, 0);
