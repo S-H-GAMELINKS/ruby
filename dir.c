@@ -2916,9 +2916,8 @@ dir_s_aref(rb_execution_context_t *ec, VALUE obj, VALUE pattern, VALUE base, VAL
     }
 
     ary = rb_check_array_type(pattern);
-    if (NIL_P(ary)) {
-        VALUE str = rb_ary_entry(pattern, 0);
-        return rb_push_glob(str, base, sort);
+    if (NIL_P(ary)) {;
+        return rb_push_glob(pattern, base, sort);
     }
     return dir_globs(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), base, sort);
 }
