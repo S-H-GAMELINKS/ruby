@@ -132,7 +132,7 @@ class Dir
   #
   #
   def self.[](*pattern, base: nil, sort: true)
-    pattern = pattern.first if pattern.count == 1
+    pattern = pattern.first if pattern.count == 1 # check args count
     __builtin_dir_s_aref(pattern, base, sort)
   end
 
