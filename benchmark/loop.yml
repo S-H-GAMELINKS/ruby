@@ -1,0 +1,7 @@
+prelude: "num = 0"
+benchmark:
+  loop: "loop{num+=1; break if num > 5}"
+  loop_break: "loop{ break }"
+  loop_raise: "loop{ begin; raise StopIteration; rescue StopIteration; break; end }"
+  loop_nonblock: "loop do num+=1; break if num > 5; end"
+loop_count: 1000000

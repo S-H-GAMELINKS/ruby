@@ -1226,7 +1226,7 @@ rb_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(val, arg))
 }
 
 static VALUE
-loop_i(VALUE _)
+loop_i(rb_execution_context_t *ec, VALUE _)
 {
     for (;;) {
 	rb_yield_0(0, 0);
@@ -1235,7 +1235,7 @@ loop_i(VALUE _)
 }
 
 static VALUE
-loop_stop(VALUE dummy, VALUE exc)
+loop_stop(rb_execution_context_t *ec, VALUE dummy, VALUE exc)
 {
     return rb_attr_get(exc, id_result);
 }
@@ -1246,41 +1246,11 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
     return DBL2NUM(HUGE_VAL);
 }
 
-/*
- *  call-seq:
- *     loop { block }
- *     loop            -> an_enumerator
- *
- *  Repeatedly executes the block.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     loop do
- *       print "Input: "
- *       line = gets
- *       break if !line or line =~ /^qQ/
- *       # ...
- *     end
- *
- *  StopIteration raised in the block breaks the loop.  In this case,
- *  loop returns the "result" value stored in the exception.
- *
- *     enum = Enumerator.new { |y|
- *       y << "one"
- *       y << "two"
- *       :ok
- *     }
- *
- *     result = loop {
- *       puts enum.next
- *     } #=> :ok
- */
-
 static VALUE
-rb_f_loop(VALUE self)
+rb_f_loop(rb_execution_context_t *ec, VALUE self)
 {
     RETURN_SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size);
-    return rb_rescue2(loop_i, (VALUE)0, loop_stop, (VALUE)0, rb_eStopIteration, (VALUE)0);
+    return loop_i(ec, (VALUE)0);
 }
 
 #if VMDEBUG
@@ -2359,8 +2329,6 @@ Init_vm_eval(void)
     rb_define_global_function("catch", rb_f_catch, -1);
     rb_define_global_function("throw", rb_f_throw, -1);
 
-    rb_define_global_function("loop", rb_f_loop, 0);
-
     rb_define_method(rb_cBasicObject, "instance_eval", rb_obj_instance_eval_internal, -1);
     rb_define_method(rb_cBasicObject, "instance_exec", rb_obj_instance_exec_internal, -1);
     rb_define_private_method(rb_cBasicObject, "method_missing", rb_method_missing, -1);
@@ -2391,5 +2359,7 @@ Init_vm_eval(void)
     id_tag = rb_intern_const("tag");
     id_value = rb_intern_const("value");
 }
+
+#include "vm_eval.rbinc"
 
 #endif /* #ifndef MJIT_HEADER */

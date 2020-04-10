@@ -1005,6 +1005,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
+		$(srcdir)/vm_eval.rb \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
@@ -8231,6 +8232,7 @@ miniinit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
 miniinit.$(OBJEXT): {$(VPATH)}trace_point.rb
 miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
+miniinit.$(OBJEXT): {$(VPATH)}vm_eval.rb
 miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
 miniinit.$(OBJEXT): {$(VPATH)}warning.rb
 miniprelude.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -15036,6 +15038,7 @@ vm.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 vm.$(OBJEXT): {$(VPATH)}vm_core.h
 vm.$(OBJEXT): {$(VPATH)}vm_debug.h
 vm.$(OBJEXT): {$(VPATH)}vm_eval.c
+vm.$(OBJEXT): {$(VPATH)}vm_eval.rbinc
 vm.$(OBJEXT): {$(VPATH)}vm_exec.c
 vm.$(OBJEXT): {$(VPATH)}vm_exec.h
 vm.$(OBJEXT): {$(VPATH)}vm_insnhelper.c
