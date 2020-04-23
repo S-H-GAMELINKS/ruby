@@ -1006,6 +1006,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
+		$(srcdir)/vm.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(empty)
@@ -8226,6 +8227,7 @@ miniinit.$(OBJEXT): {$(VPATH)}subst.h
 miniinit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
 miniinit.$(OBJEXT): {$(VPATH)}trace_point.rb
+miniinit.$(OBJEXT): {$(VPATH)}vm.rb
 miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
 miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
 miniinit.$(OBJEXT): {$(VPATH)}warning.rb
@@ -15014,6 +15016,7 @@ vm.$(OBJEXT): {$(VPATH)}variable.h
 vm.$(OBJEXT): {$(VPATH)}vm.c
 vm.$(OBJEXT): {$(VPATH)}vm.h
 vm.$(OBJEXT): {$(VPATH)}vm.inc
+vm.$(OBJEXT): {$(VPATH)}vm.rbinc
 vm.$(OBJEXT): {$(VPATH)}vm_args.c
 vm.$(OBJEXT): {$(VPATH)}vm_call_iseq_optimized.inc
 vm.$(OBJEXT): {$(VPATH)}vm_callinfo.h

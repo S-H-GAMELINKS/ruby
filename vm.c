@@ -2879,19 +2879,8 @@ mjit_enabled_p(VALUE _)
 }
 
 static VALUE
-mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
+mjit_pause_m(rb_execution_context_t *ec, RB_UNUSED_VAR(VALUE self), VALUE wait)
 {
-    VALUE options = Qnil;
-    VALUE wait = Qtrue;
-    rb_scan_args(argc, argv, "0:", &options);
-
-    if (!NIL_P(options)) {
-        static ID keyword_ids[1];
-        if (!keyword_ids[0])
-            keyword_ids[0] = rb_intern("wait");
-        rb_get_kwargs(options, keyword_ids, 0, 1, &wait);
-    }
-
     return mjit_pause(RTEST(wait));
 }
 
@@ -3039,7 +3028,6 @@ Init_VM(void)
      */
     mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
     rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
-    rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
     rb_define_singleton_method(mjit, "resume", mjit_resume_m, 0);
 
     /*
@@ -3328,6 +3316,8 @@ Init_VM(void)
     /* vm_backtrace.c */
     Init_vm_backtrace();
 }
+
+#include "vm.rbinc"
 
 void
 rb_vm_set_progname(VALUE filename)

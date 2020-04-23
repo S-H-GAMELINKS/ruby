@@ -1,0 +1,5 @@
+benchmark:
+  pause: "RubyVM::MJIT.pause"
+  pause_true: "RubyVM::MJIT.pause(wait: true)"
+  pause_false: "RubyVM::MJIT.pause(wait: false)"
+loop_count: 10000
