@@ -1008,6 +1008,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
+		$(srcdir)/rational.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(empty)
@@ -8221,6 +8222,7 @@ miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
 miniinit.$(OBJEXT): {$(VPATH)}prelude.rb
+miniinit.$(OBJEXT): {$(VPATH)}rational.rb
 miniinit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 miniinit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 miniinit.$(OBJEXT): {$(VPATH)}st.h
@@ -10589,6 +10591,7 @@ rational.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 rational.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+rational.$(OBJEXT): {$(VPATH)}builtin.h
 rational.$(OBJEXT): {$(VPATH)}config.h
 rational.$(OBJEXT): {$(VPATH)}defines.h
 rational.$(OBJEXT): {$(VPATH)}encoding.h
@@ -10599,6 +10602,7 @@ rational.$(OBJEXT): {$(VPATH)}missing.h
 rational.$(OBJEXT): {$(VPATH)}onigmo.h
 rational.$(OBJEXT): {$(VPATH)}oniguruma.h
 rational.$(OBJEXT): {$(VPATH)}rational.c
+rational.$(OBJEXT): {$(VPATH)}rational.rbinc
 rational.$(OBJEXT): {$(VPATH)}ruby_assert.h
 rational.$(OBJEXT): {$(VPATH)}st.h
 rational.$(OBJEXT): {$(VPATH)}subst.h

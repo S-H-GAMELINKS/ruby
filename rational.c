@@ -30,6 +30,7 @@
 #include "internal/object.h"
 #include "internal/rational.h"
 #include "ruby_assert.h"
+#include "builtin.h"
 
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
@@ -515,55 +516,15 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
 static VALUE nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise);
 static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
 
-/*
- * call-seq:
- *    Rational(x, y, exception: true)  ->  rational or nil
- *    Rational(arg, exception: true)   ->  rational or nil
- *
- * Returns +x/y+ or +arg+ as a Rational.
- *
- *    Rational(2, 3)   #=> (2/3)
- *    Rational(5)      #=> (5/1)
- *    Rational(0.5)    #=> (1/2)
- *    Rational(0.3)    #=> (5404319552844595/18014398509481984)
- *
- *    Rational("2/3")  #=> (2/3)
- *    Rational("0.3")  #=> (3/10)
- *
- *    Rational("10 cents")  #=> ArgumentError
- *    Rational(nil)         #=> TypeError
- *    Rational(1, nil)      #=> TypeError
- *
- *    Rational("10 cents", exception: false)  #=> nil
- *
- * Syntax of the string form:
- *
- *   string form = extra spaces , rational , extra spaces ;
- *   rational = [ sign ] , unsigned rational ;
- *   unsigned rational = numerator | numerator , "/" , denominator ;
- *   numerator = integer part | fractional part | integer part , fractional part ;
- *   denominator = digits ;
- *   integer part = digits ;
- *   fractional part = "." , digits , [ ( "e" | "E" ) , [ sign ] , digits ] ;
- *   sign = "-" | "+" ;
- *   digits = digit , { digit | "_" , digit } ;
- *   digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
- *   extra spaces = ? \s* ? ;
- *
- * See also String#to_r.
- */
 static VALUE
-nurat_f_rational(int argc, VALUE *argv, VALUE klass)
+nurat_f_rational(rb_execution_context_t *ec, VALUE klass, VALUE a1, VALUE a2, VALUE opts)
 {
-    VALUE a1, a2, opts = Qnil;
     int raise = TRUE;
 
-    if (rb_scan_args(argc, argv, "11:", &a1, &a2, &opts) == 1) {
+    if (NIL_P(a2)) {
         a2 = Qundef;
     }
-    if (!NIL_P(opts)) {
-        raise = rb_opts_exception_p(opts, raise);
-    }
+    raise = rb_opts_exception_p(opts, raise);
     return nurat_convert(rb_cRational, a1, a2, raise);
 }
 
@@ -2721,8 +2682,6 @@ Init_Rational(void)
 
     rb_undef_method(CLASS_OF(rb_cRational), "new");
 
-    rb_define_global_function("Rational", nurat_f_rational, -1);
-
     rb_define_method(rb_cRational, "numerator", nurat_numerator, 0);
     rb_define_method(rb_cRational, "denominator", nurat_denominator, 0);
 
@@ -2794,3 +2753,5 @@ Init_Rational(void)
 
     rb_provide("rational.so");	/* for backward compatibility */
 }
+
+#include "rational.rbinc"
