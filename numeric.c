@@ -39,6 +39,7 @@
 #include "internal/variable.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "builtin.h"
 
 /* use IEEE 64bit values if not defined */
 #ifndef FLT_RADIX
@@ -205,18 +206,11 @@ rb_num_zerodiv(void)
 }
 
 enum ruby_num_rounding_mode
-rb_num_get_rounding_option(VALUE opts)
+rb_num_get_rounding_option(VALUE rounding)
 {
-    static ID round_kwds[1];
-    VALUE rounding;
     VALUE str;
     const char *s;
 
-    if (!NIL_P(opts)) {
-	if (!round_kwds[0]) {
-	    round_kwds[0] = rb_intern_const("half");
-	}
-	if (!rb_get_kwargs(opts, round_kwds, 0, 1, &rounding)) goto noopt;
 	if (SYMBOL_P(rounding)) {
 	    str = rb_sym2str(rounding);
 	}
@@ -243,7 +237,6 @@ rb_num_get_rounding_option(VALUE opts)
 	}
       invalid:
 	rb_raise(rb_eArgError, "invalid rounding mode: % "PRIsVALUE, rounding);
-    }
   noopt:
     return RUBY_NUM_ROUND_DEFAULT;
 }
@@ -2219,69 +2212,14 @@ rb_int_truncate(VALUE num, int ndigits)
     }
 }
 
-/*
- *  call-seq:
- *     float.round([ndigits] [, half: mode])  ->  integer or float
- *
- *  Returns +float+ rounded to the nearest value with
- *  a precision of +ndigits+ decimal digits (default: 0).
- *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
- *
- *  Returns a floating point number when +ndigits+ is positive,
- *  otherwise returns an integer.
- *
- *     1.4.round      #=> 1
- *     1.5.round      #=> 2
- *     1.6.round      #=> 2
- *     (-1.5).round   #=> -2
- *
- *     1.234567.round(2)   #=> 1.23
- *     1.234567.round(3)   #=> 1.235
- *     1.234567.round(4)   #=> 1.2346
- *     1.234567.round(5)   #=> 1.23457
- *
- *     34567.89.round(-5)  #=> 0
- *     34567.89.round(-4)  #=> 30000
- *     34567.89.round(-3)  #=> 35000
- *     34567.89.round(-2)  #=> 34600
- *     34567.89.round(-1)  #=> 34570
- *     34567.89.round(0)   #=> 34568
- *     34567.89.round(1)   #=> 34567.9
- *     34567.89.round(2)   #=> 34567.89
- *     34567.89.round(3)   #=> 34567.89
- *
- *  If the optional +half+ keyword argument is given,
- *  numbers that are half-way between two possible rounded values
- *  will be rounded according to the specified tie-breaking +mode+:
- *
- *  * <code>:up</code> or +nil+: round half away from zero (default)
- *  * <code>:down</code>: round half toward zero
- *  * <code>:even</code>: round half toward the nearest even number
- *
- *     2.5.round(half: :up)      #=> 3
- *     2.5.round(half: :down)    #=> 2
- *     2.5.round(half: :even)    #=> 2
- *     3.5.round(half: :up)      #=> 4
- *     3.5.round(half: :down)    #=> 3
- *     3.5.round(half: :even)    #=> 4
- *     (-2.5).round(half: :up)   #=> -3
- *     (-2.5).round(half: :down) #=> -2
- *     (-2.5).round(half: :even) #=> -2
- */
-
 static VALUE
-flo_round(int argc, VALUE *argv, VALUE num)
+flo_round(rb_execution_context_t *ec, VALUE num, VALUE nd, VALUE opt)
 {
     double number, f, x;
-    VALUE nd, opt;
     int ndigits = 0;
     enum ruby_num_rounding_mode mode;
 
-    if (rb_scan_args(argc, argv, "01:", &nd, &opt)) {
 	ndigits = NUM2INT(nd);
-    }
     mode = rb_num_get_rounding_option(opt);
     number = RFLOAT_VALUE(num);
     if (number == 0.0) {
@@ -2466,21 +2404,10 @@ num_ceil(int argc, VALUE *argv, VALUE num)
     return flo_ceil(argc, argv, rb_Float(num));
 }
 
-/*
- *  call-seq:
- *     num.round([ndigits])  ->  integer or float
- *
- *  Returns +num+ rounded to the nearest value with
- *  a precision of +ndigits+ decimal digits (default: 0).
- *
- *  Numeric implements this by converting its value to a Float and
- *  invoking Float#round.
- */
-
 static VALUE
-num_round(int argc, VALUE* argv, VALUE num)
+num_round(rb_execution_context_t *ec, VALUE num, VALUE nd)
 {
-    return flo_round(argc, argv, rb_Float(num));
+    return flo_round(ec, rb_Float(num), nd, Qnil);
 }
 
 /*
@@ -5233,50 +5160,19 @@ int_dotimes(VALUE num)
     return num;
 }
 
-/*
- *  Document-method: Integer#round
- *  call-seq:
- *     int.round([ndigits] [, half: mode])  ->  integer or float
- *
- *  Returns +int+ rounded to the nearest value with
- *  a precision of +ndigits+ decimal digits (default: 0).
- *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
- *
- *  Returns +self+ when +ndigits+ is zero or positive.
- *
- *     1.round           #=> 1
- *     1.round(2)        #=> 1
- *     15.round(-1)      #=> 20
- *     (-15).round(-1)   #=> -20
- *
- *  The optional +half+ keyword argument is available
- *  similar to Float#round.
- *
- *     25.round(-1, half: :up)      #=> 30
- *     25.round(-1, half: :down)    #=> 20
- *     25.round(-1, half: :even)    #=> 20
- *     35.round(-1, half: :up)      #=> 40
- *     35.round(-1, half: :down)    #=> 30
- *     35.round(-1, half: :even)    #=> 40
- *     (-25).round(-1, half: :up)   #=> -30
- *     (-25).round(-1, half: :down) #=> -20
- *     (-25).round(-1, half: :even) #=> -20
- */
-
 static VALUE
-int_round(int argc, VALUE* argv, VALUE num)
+int_round(rb_execution_context_t *ec, VALUE num, VALUE nd, VALUE opt)
 {
     int ndigits;
     int mode;
-    VALUE nd, opt;
 
-    if (!rb_scan_args(argc, argv, "01:", &nd, &opt)) return num;
+    if (NIL_P(nd) && NIL_P(opt)) return num;
+    if (NIL_P(nd)) return num;
     ndigits = NUM2INT(nd);
     mode = rb_num_get_rounding_option(opt);
-    if (ndigits >= 0) {
-	return num;
+        if (ndigits >= 0)
+    {
+        return num;
     }
     return rb_int_round(num, ndigits, mode);
 }
@@ -5621,7 +5517,6 @@ Init_Numeric(void)
 
     rb_define_method(rb_cNumeric, "floor", num_floor, -1);
     rb_define_method(rb_cNumeric, "ceil", num_ceil, -1);
-    rb_define_method(rb_cNumeric, "round", num_round, -1);
     rb_define_method(rb_cNumeric, "truncate", num_truncate, -1);
     rb_define_method(rb_cNumeric, "step", num_step, -1);
     rb_define_method(rb_cNumeric, "positive?", num_positive_p, 0);
@@ -5654,7 +5549,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "floor", int_floor, -1);
     rb_define_method(rb_cInteger, "ceil", int_ceil, -1);
     rb_define_method(rb_cInteger, "truncate", int_truncate, -1);
-    rb_define_method(rb_cInteger, "round", int_round, -1);
     rb_define_method(rb_cInteger, "<=>", rb_int_cmp, 1);
 
     rb_define_method(rb_cInteger, "-@", rb_int_uminus, 0);
@@ -5817,7 +5711,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "to_int", flo_to_i, 0);
     rb_define_method(rb_cFloat, "floor", flo_floor, -1);
     rb_define_method(rb_cFloat, "ceil", flo_ceil, -1);
-    rb_define_method(rb_cFloat, "round", flo_round, -1);
     rb_define_method(rb_cFloat, "truncate", flo_truncate, -1);
 
     rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
@@ -5828,6 +5721,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "positive?", flo_positive_p, 0);
     rb_define_method(rb_cFloat, "negative?", flo_negative_p, 0);
 }
+
+#include "numeric.rbinc"
 
 #undef rb_float_value
 double

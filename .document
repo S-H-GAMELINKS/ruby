@@ -15,6 +15,7 @@ ast.rb
 dir.rb
 gc.rb
 io.rb
+integer.rb
 kernel.rb
 pack.rb
 trace_point.rb

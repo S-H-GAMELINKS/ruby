@@ -1,0 +1,5 @@
+benchmark:
+  round: "(4.2).round"
+  round_one_up: "(4.2).round(1, half: :up)"
+  round_minus_one_up: "(4.2).round(-1, half: :up)"
+loop_count: 10000
