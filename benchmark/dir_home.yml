@@ -1,0 +1,4 @@
+benchmark:
+  noarg: "Dir.home"
+  givenarg: "Dir.home('root')"
+loop_count: 10000
