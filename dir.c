@@ -3303,6 +3303,7 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
 {
     VALUE user;
     const char *u = 0;
+    VALUE str = rb_str_new(0, 0);
 
     rb_check_arity(argc, 0, 1);
     user = (argc > 0) ? argv[0] : Qnil;
@@ -3311,10 +3312,10 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
 	rb_must_asciicompat(user);
 	u = StringValueCStr(user);
 	if (*u) {
-	    return rb_home_dir_of(user, rb_str_new(0, 0));
+	    return rb_home_dir_of(user, str);
 	}
     }
-    return rb_default_home_dir(rb_str_new(0, 0));
+    return rb_default_home_dir(str);
 
 }
 
