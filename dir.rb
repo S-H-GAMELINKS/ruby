@@ -47,7 +47,11 @@ class Dir
   #
   #
   def self.foreach(path, encoding: nil, &block)
-    __builtin_dir_foreach(path, encoding)
+    if block
+      __builtin_dir_foreach(path, encoding)
+    else
+      __builtin_dir_s_open(path, encoding).to_enum 
+    end
   end
 
   #
@@ -90,8 +94,12 @@ class Dir
   #     Got main.rb
   #
   #
-  def self.each_child(path, encoding: nil)
-    __builtin_dir_s_each_child(path, encoding)
+  def self.each_child(path, encoding: nil, &block)
+    if block
+      __builtin_dir_s_each_child(path, encoding)
+    else
+      __builtin_dir_s_children(path, encoding).to_enum 
+    end
   end
 
   #
