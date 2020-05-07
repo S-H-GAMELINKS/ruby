@@ -16,6 +16,7 @@ dir.rb
 gc.rb
 io.rb
 kernel.rb
+module.rb
 pack.rb
 trace_point.rb
 warning.rb
