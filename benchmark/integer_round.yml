@@ -1,0 +1,7 @@
+prelude: num = 42
+benchmark:
+  round: "num.round"
+  round_one: "num.round(1)"
+  round_one_up: "num.round(1, half: :up)"
+  round_minus_one_up: "num.round(-1, half: :up)"
+loop_count: 10000

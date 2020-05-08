@@ -1008,6 +1008,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
+		$(srcdir)/numeric.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(empty)
@@ -8217,6 +8218,7 @@ miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
 miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}node.h
+miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
@@ -9028,6 +9030,7 @@ numeric.$(OBJEXT): {$(VPATH)}backward/2/r_cast.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/rmodule.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 numeric.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+numeric.$(OBJEXT): {$(VPATH)}builtin.h
 numeric.$(OBJEXT): {$(VPATH)}config.h
 numeric.$(OBJEXT): {$(VPATH)}constant.h
 numeric.$(OBJEXT): {$(VPATH)}defines.h
@@ -9038,6 +9041,7 @@ numeric.$(OBJEXT): {$(VPATH)}intern.h
 numeric.$(OBJEXT): {$(VPATH)}internal.h
 numeric.$(OBJEXT): {$(VPATH)}missing.h
 numeric.$(OBJEXT): {$(VPATH)}numeric.c
+numeric.$(OBJEXT): {$(VPATH)}numeric.rbinc
 numeric.$(OBJEXT): {$(VPATH)}onigmo.h
 numeric.$(OBJEXT): {$(VPATH)}oniguruma.h
 numeric.$(OBJEXT): {$(VPATH)}ruby_assert.h
