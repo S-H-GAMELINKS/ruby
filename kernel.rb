@@ -27,6 +27,20 @@ module Kernel
     __builtin_rb_obj_clone2(freeze)
   end
 
+  #!
+  # :nodoc:
+  #--
+  # Default implementation of \c #initialize_clone
+  #
+  # \param[in] The number of arguments
+  # \param[in] The array of arguments
+  # \param[in] obj the receiver being initialized
+  #++
+  #
+  def initialize_clone(orig = nil, freeze: nil)
+    __builtin_rb_obj_init_clone(orig, freeze)
+  end
+
   module_function
 
   #
