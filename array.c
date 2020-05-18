@@ -1702,6 +1702,39 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
     }
 }
 
+
+/*
+ *  call-seq:
+ *     ary.both_end     ->  new_ary
+ *     ary.both_end(n)  ->  new_ary
+ *
+ *  Returns the last element(s) of +self+. If the array is empty,
+ *  the first form returns +nil+.
+ *
+ *  See also Array#first for the opposite effect.
+ *
+ *     a = [ "w", "x", "y", "z" ]
+ *     a.both_end     #=> ["w", "z"]
+ *     a.both_end(2)  #=> [["w", "x"], ["y", "z"]
+ *     [].both_end    #=> [nil, nil]
+ */
+
+static VALUE
+rb_ary_both_end(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE first, last;
+
+    rb_check_arity(argc, 0, 1);
+
+    if (RARRAY_LEN(ary) == 0)
+        return rb_assoc_new(Qnil, Qnil);
+
+    first = rb_ary_first(argc, argv, ary);
+    last = rb_ary_last(argc, argv, ary);
+
+    return rb_assoc_new(first, last);
+}
+
 /*
  *  call-seq:
  *     ary.fetch(index)                    -> obj
@@ -6986,6 +7019,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
     rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
+
+    rb_define_method(rb_cArray, "both_end", rb_ary_both_end, -1);
 }
 
 #include "array.rbinc"
