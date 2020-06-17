@@ -2753,7 +2753,7 @@ rb_method_entry_location(const rb_method_entry_t *me)
  * or nil if this method was not defined in Ruby (i.e. native).
  */
 
-VALUE
+static VALUE
 rb_method_location(VALUE method)
 {
     return method_def_location(rb_method_def(method));
