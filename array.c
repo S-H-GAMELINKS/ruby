@@ -3116,12 +3116,12 @@ rb_ary_to_s(VALUE ary)
 static VALUE
 rb_ary_to_a(VALUE ary)
 {
-    if (rb_obj_class(ary) != rb_cArray) {
+    if (rb_obj_class(ary) == rb_cArray) {
+        return ary;
+    }   
 	VALUE dup = rb_ary_new2(RARRAY_LEN(ary));
 	rb_ary_replace(dup, ary);
 	return dup;
-    }
-    return ary;
 }
 
 /*
