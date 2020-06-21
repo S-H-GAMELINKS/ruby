@@ -1396,84 +1396,6 @@ rb_obj_frozen_p(VALUE obj)
 
 /*
  *  call-seq:
- *     nil.to_i -> 0
- *
- *  Always returns zero.
- *
- *     nil.to_i   #=> 0
- */
-
-
-static VALUE
-nil_to_i(VALUE obj)
-{
-    return INT2FIX(0);
-}
-
-/*
- *  call-seq:
- *     nil.to_f    -> 0.0
- *
- *  Always returns zero.
- *
- *     nil.to_f   #=> 0.0
- */
-
-static VALUE
-nil_to_f(VALUE obj)
-{
-    return DBL2NUM(0.0);
-}
-
-/*
- *  call-seq:
- *     nil.to_s    -> ""
- *
- *  Always returns the empty string.
- */
-
-static VALUE
-nil_to_s(VALUE obj)
-{
-    return rb_cNilClass_to_s;
-}
-
-/*
- * Document-method: to_a
- *
- *  call-seq:
- *     nil.to_a    -> []
- *
- *  Always returns an empty array.
- *
- *     nil.to_a   #=> []
- */
-
-static VALUE
-nil_to_a(VALUE obj)
-{
-    return rb_ary_new2(0);
-}
-
-/*
- * Document-method: to_h
- *
- *  call-seq:
- *     nil.to_h    -> {}
- *
- *  Always returns an empty hash.
- *
- *     nil.to_h   #=> {}
- */
-
-static VALUE
-nil_to_h(VALUE obj)
-{
-    return rb_hash_new();
-}
-
-/*
- *  call-seq:
  *    nil.inspect  -> "nil"
  *
  *  Always returns the string "nil".
@@ -4656,11 +4578,6 @@ InitVM_Object(void)
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
     rb_cNilClass_to_s = rb_fstring_enc_lit("", rb_usascii_encoding());
     rb_gc_register_mark_object(rb_cNilClass_to_s);
-    rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
-    rb_define_method(rb_cNilClass, "to_f", nil_to_f, 0);
-    rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
-    rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
-    rb_define_method(rb_cNilClass, "to_h", nil_to_h, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);
     rb_define_method(rb_cNilClass, "=~", nil_match, 1);
     rb_define_method(rb_cNilClass, "&", false_and, 1);
@@ -4770,6 +4687,7 @@ InitVM_Object(void)
 }
 
 #include "kernel.rbinc"
+#include "nil.rbinc"
 
 void
 Init_Object(void)

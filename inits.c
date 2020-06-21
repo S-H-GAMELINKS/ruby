@@ -90,6 +90,7 @@ rb_call_builtin_inits(void)
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(kernel);
+    BUILTIN(nil);
     Init_builtin_prelude();
 }
 #undef CALL
