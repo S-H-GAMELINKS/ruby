@@ -5243,48 +5243,44 @@ int_dotimes(VALUE num)
     return num;
 }
 
-/*
- *  Document-method: Integer#round
- *  call-seq:
- *     int.round([ndigits] [, half: mode])  ->  integer or float
- *
- *  Returns +int+ rounded to the nearest value with
- *  a precision of +ndigits+ decimal digits (default: 0).
- *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
- *
- *  Returns +self+ when +ndigits+ is zero or positive.
- *
- *     1.round           #=> 1
- *     1.round(2)        #=> 1
- *     15.round(-1)      #=> 20
- *     (-15).round(-1)   #=> -20
- *
- *  The optional +half+ keyword argument is available
- *  similar to Float#round.
- *
- *     25.round(-1, half: :up)      #=> 30
- *     25.round(-1, half: :down)    #=> 20
- *     25.round(-1, half: :even)    #=> 20
- *     35.round(-1, half: :up)      #=> 40
- *     35.round(-1, half: :down)    #=> 30
- *     35.round(-1, half: :even)    #=> 40
- *     (-25).round(-1, half: :up)   #=> -30
- *     (-25).round(-1, half: :down) #=> -20
- *     (-25).round(-1, half: :even) #=> -20
- */
+enum ruby_num_rounding_mode
+builtin_rb_num_get_rounding_option(VALUE rounding)
+{
+    VALUE str;
+    const char *s;
+
+	if (SYMBOL_P(rounding)) {
+	    str = rb_sym2str(rounding);
+	}
+	else if (!RB_TYPE_P(str = rounding, T_STRING)) {
+	    str = rb_check_string_type(rounding);
+	    if (NIL_P(str)) goto invalid;
+	}
+        rb_must_asciicompat(str);
+	s = RSTRING_PTR(str);
+	switch (RSTRING_LEN(str)) {
+	  case 2:
+	    if (rb_memcicmp(s, "up", 2) == 0)
+		return RUBY_NUM_ROUND_HALF_UP;
+	    break;
+	  case 4:
+	    if (rb_memcicmp(s, "even", 4) == 0)
+		return RUBY_NUM_ROUND_HALF_EVEN;
+	    if (strncasecmp(s, "down", 4) == 0)
+		return RUBY_NUM_ROUND_HALF_DOWN;
+	    break;
+	}
+      invalid:
+	rb_raise(rb_eArgError, "invalid rounding mode: % "PRIsVALUE, rounding);
+}
 
 static VALUE
-int_round(int argc, VALUE* argv, VALUE num)
+int_round(rb_execution_context_t *ec, VALUE num, VALUE nd, VALUE opt)
 {
-    int ndigits;
-    int mode;
-    VALUE nd, opt;
+    int ndigits, mode;
 
-    if (!rb_scan_args(argc, argv, "01:", &nd, &opt)) return num;
     ndigits = NUM2INT(nd);
-    mode = rb_num_get_rounding_option(opt);
+    mode = builtin_rb_num_get_rounding_option(opt);
     if (ndigits >= 0) {
 	return num;
     }
@@ -5664,7 +5660,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "floor", int_floor, -1);
     rb_define_method(rb_cInteger, "ceil", int_ceil, -1);
     rb_define_method(rb_cInteger, "truncate", int_truncate, -1);
-    rb_define_method(rb_cInteger, "round", int_round, -1);
     rb_define_method(rb_cInteger, "<=>", rb_int_cmp, 1);
 
     rb_define_method(rb_cInteger, "-@", rb_int_uminus, 0);
