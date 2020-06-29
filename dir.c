@@ -3309,15 +3309,13 @@ static VALUE
 dir_s_home(int argc, VALUE *argv, VALUE obj)
 {
     VALUE user;
-    const char *u = 0;
 
     rb_check_arity(argc, 0, 1);
     user = (argc > 0) ? argv[0] : Qnil;
     if (!NIL_P(user)) {
 	SafeStringValue(user);
 	rb_must_asciicompat(user);
-	u = StringValueCStr(user);
-	if (*u) {
+	if (*StringValueConstCStr(user)) {
 	    return rb_home_dir_of(user, rb_str_new(0, 0));
 	}
     }

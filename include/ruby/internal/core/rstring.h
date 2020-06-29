@@ -50,6 +50,7 @@
 #define StringValue(v)     rb_string_value(&(v))
 #define StringValuePtr(v)  rb_string_value_ptr(&(v))
 #define StringValueCStr(v) rb_string_value_cstr(&(v))
+#define StringValueConstCStr(v) rb_string_value_const_cstr(&(v))
 #define SafeStringValue(v) StringValue(v)
 #define ExportStringValue(v) do { \
     StringValue(v);               \
@@ -90,6 +91,7 @@ VALUE rb_str_to_str(VALUE);
 VALUE rb_string_value(volatile VALUE*);
 char *rb_string_value_ptr(volatile VALUE*);
 char *rb_string_value_cstr(volatile VALUE*);
+const char *rb_string_value_const_cstr(volatile VALUE*);
 VALUE rb_str_export(VALUE);
 VALUE rb_str_export_locale(VALUE);
 

@@ -2402,6 +2402,21 @@ rb_string_value_cstr(volatile VALUE *ptr)
     return s;
 }
 
+const char *
+rb_string_value_const_cstr(volatile VALUE *ptr)
+{
+    VALUE str = rb_string_value(ptr);
+    int w;
+    const char *s = str_null_check(str, &w);
+    if (!s) {
+	if (w) {
+	    rb_raise(rb_eArgError, "string contains null char");
+	}
+	rb_raise(rb_eArgError, "string contains null byte");
+    }
+    return s;   
+}
+
 char *
 rb_str_fill_terminator(VALUE str, const int newminlen)
 {
