@@ -82,3 +82,23 @@ class Integer
     Primitive.cexpr! 'rb_int_zero_p(self)'
   end
 end
+class Float
+  def zero?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'flo_zero_p(self)'
+  end
+
+  def to_f
+    return self
+  end
+
+  def abs
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_float_abs(self)'
+  end
+
+  def magnitude
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_float_abs(self)'
+  end
+end

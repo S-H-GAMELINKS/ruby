@@ -1706,12 +1706,6 @@ rb_float_eql(VALUE x, VALUE y)
  * Since +float+ is already a Float, returns +self+.
  */
 
-static VALUE
-flo_to_f(VALUE num)
-{
-    return num;
-}
-
 /*
  *  call-seq:
  *     float.abs        ->  float
@@ -5758,10 +5752,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "<=", flo_le, 1);
     rb_define_method(rb_cFloat, "eql?", flo_eql, 1);
     rb_define_method(rb_cFloat, "hash", flo_hash, 0);
-    rb_define_method(rb_cFloat, "to_f", flo_to_f, 0);
-    rb_define_method(rb_cFloat, "abs", rb_float_abs, 0);
-    rb_define_method(rb_cFloat, "magnitude", rb_float_abs, 0);
-    rb_define_method(rb_cFloat, "zero?", flo_zero_p, 0);
 
     rb_define_method(rb_cFloat, "to_i", flo_to_i, 0);
     rb_define_method(rb_cFloat, "to_int", flo_to_i, 0);
@@ -5793,4 +5783,4 @@ rb_float_new(double d)
     return rb_float_new_inline(d);
 }
 
-#include "integer.rbinc"
+#include "numeric.rbinc"

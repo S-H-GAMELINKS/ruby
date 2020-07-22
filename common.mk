@@ -1009,7 +1009,7 @@ $(srcs_vpath)mjit_compile.inc: $(tooldir)/ruby_vm/views/mjit_compile.inc.erb $(i
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
 		$(srcdir)/gc.rb \
-		$(srcdir)/integer.rb \
+		$(srcdir)/numeric.rb \
 		$(srcdir)/io.rb \
 		$(srcdir)/dir.rb \
 		$(srcdir)/pack.rb \
@@ -8090,10 +8090,10 @@ miniinit.$(OBJEXT): {$(VPATH)}config.h
 miniinit.$(OBJEXT): {$(VPATH)}defines.h
 miniinit.$(OBJEXT): {$(VPATH)}dir.rb
 miniinit.$(OBJEXT): {$(VPATH)}encoding.h
+miniinit.$(OBJEXT): {$(VPATH)}float.rb
 miniinit.$(OBJEXT): {$(VPATH)}gc.rb
 miniinit.$(OBJEXT): {$(VPATH)}gem_prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}id.h
-miniinit.$(OBJEXT): {$(VPATH)}integer.rb
 miniinit.$(OBJEXT): {$(VPATH)}intern.h
 miniinit.$(OBJEXT): {$(VPATH)}internal.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -8245,6 +8245,7 @@ miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
 miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}node.h
+miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
@@ -8936,8 +8937,6 @@ numeric.$(OBJEXT): {$(VPATH)}defines.h
 numeric.$(OBJEXT): {$(VPATH)}encoding.h
 numeric.$(OBJEXT): {$(VPATH)}id.h
 numeric.$(OBJEXT): {$(VPATH)}id_table.h
-numeric.$(OBJEXT): {$(VPATH)}integer.rb
-numeric.$(OBJEXT): {$(VPATH)}integer.rbinc
 numeric.$(OBJEXT): {$(VPATH)}intern.h
 numeric.$(OBJEXT): {$(VPATH)}internal.h
 numeric.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -9082,6 +9081,8 @@ numeric.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 numeric.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 numeric.$(OBJEXT): {$(VPATH)}missing.h
 numeric.$(OBJEXT): {$(VPATH)}numeric.c
+numeric.$(OBJEXT): {$(VPATH)}numeric.rb
+numeric.$(OBJEXT): {$(VPATH)}numeric.rbinc
 numeric.$(OBJEXT): {$(VPATH)}onigmo.h
 numeric.$(OBJEXT): {$(VPATH)}oniguruma.h
 numeric.$(OBJEXT): {$(VPATH)}ruby_assert.h

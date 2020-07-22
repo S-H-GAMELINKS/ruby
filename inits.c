@@ -82,7 +82,7 @@ rb_call_builtin_inits(void)
 {
 #define BUILTIN(n) CALL(builtin_##n)
     BUILTIN(gc);
-    BUILTIN(integer);
+    BUILTIN(numeric);
     BUILTIN(io);
     BUILTIN(dir);
     BUILTIN(ast);
