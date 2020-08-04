@@ -1,6 +1,6 @@
 name: Compilations
 
-on: [push, pull_request]
+on: [workflow_dispatch, push, pull_request]
 
 # Github actions does not support YAML anchors.  This creative use of
 # environment variables (plus the "echo ::set-env" hack) is to reroute that

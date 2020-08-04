@@ -1,5 +1,5 @@
 name: MinGW
-on: [push, pull_request]
+on: [workflow_dispatch, push, pull_request]
 
 # Notes:
 # Actions console encoding causes issues, see test-all & test-spec steps
