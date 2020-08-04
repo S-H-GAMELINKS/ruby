@@ -1,0 +1,15 @@
+prelude: |
+  obj = Object.new
+  str = String.new
+  hash = Hash.new
+  num = 42
+benchmark:
+  obj_itself: |
+    obj.itself
+  str_itself: |
+    str.itself
+  hash_itself: |
+    hash.itself
+  num_itself: |
+    num.itself
+loop_count: 10000000
