@@ -196,6 +196,7 @@ VALUE rb_cInteger;
 
 VALUE rb_eZeroDivError;
 VALUE rb_eFloatDomainError;
+static VALUE rb_cInteger_fix_size;
 
 static ID id_to, id_by;
 
@@ -4860,16 +4861,10 @@ rb_int_abs(VALUE num)
  */
 
 static VALUE
-fix_size(VALUE fix)
-{
-    return INT2FIX(sizeof(long));
-}
-
-static VALUE
 int_size(VALUE num)
 {
     if (FIXNUM_P(num)) {
-	return fix_size(num);
+	return rb_cInteger_fix_size;
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	return rb_big_size_m(num);
@@ -5642,6 +5637,8 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "<<", rb_int_lshift, 1);
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
 
+    rb_cInteger_fix_size = INT2FIX(sizeof(long));
+    rb_gc_register_mark_object(rb_cInteger_fix_size);
     rb_define_method(rb_cInteger, "size", int_size, 0);
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
