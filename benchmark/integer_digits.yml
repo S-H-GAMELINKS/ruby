@@ -1,0 +1,17 @@
+loop_count: 20000000
+prelude: |
+  fixnum = 2**10
+  bignum = 2**100
+benchmark:
+  fix_digits_non_base: |
+    fixnum.digits
+  fix_digits_given_base: |
+    fixnum.digits(42)
+  fix_digits_given_bignum: |
+    fixnum.digits(bignum)
+  big_digits_non_base: |
+    bignum.digits
+  big_digits_given_base: |
+    bignum.digits(42)
+  big_digits_given_bignum: |
+    bignum.digits(bignum)

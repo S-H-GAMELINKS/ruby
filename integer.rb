@@ -81,4 +81,9 @@ class Integer
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_zero_p(self)'
   end
+
+  def digits(base = 10)
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_int_digits(self, base)'
+  end
 end

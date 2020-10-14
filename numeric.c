@@ -5008,9 +5008,6 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
     else if (RB_TYPE_P(base, T_BIGNUM) && BIGNUM_NEGATIVE_P(base))
         rb_raise(rb_eArgError, "negative radix");
 
-    if (FIXNUM_P(base) && FIXNUM_P(num))
-        return rb_fix_digits(num, FIX2LONG(base));
-
     if (FIXNUM_P(num))
         return rb_ary_new_from_args(1, num);
 
@@ -5025,35 +5022,27 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
 }
 
 static VALUE
-rb_int_digits(int argc, VALUE *argv, VALUE num)
+rb_int_digits(VALUE num, VALUE base_value)
 {
-    VALUE base_value;
     long base;
 
     if (rb_num_negative_p(num))
         rb_raise(rb_eMathDomainError, "out of domain");
 
-    if (rb_check_arity(argc, 0, 1)) {
-        base_value = rb_to_int(argv[0]);
-        if (!RB_INTEGER_TYPE_P(base_value))
-            rb_raise(rb_eTypeError, "wrong argument type %s (expected Integer)",
-                     rb_obj_classname(argv[0]));
-        if (RB_TYPE_P(base_value, T_BIGNUM))
-            return rb_int_digits_bigbase(num, base_value);
+    if (!RB_INTEGER_TYPE_P(base_value))
+        rb_raise(rb_eTypeError, "wrong argument type %s (expected Integer)",
+                    rb_obj_classname(base_value));
 
-        base = FIX2LONG(base_value);
-        if (base < 0)
-            rb_raise(rb_eArgError, "negative radix");
-        else if (base < 2)
-            rb_raise(rb_eArgError, "invalid radix %ld", base);
-    }
-    else
-        base = 10;
+    base = FIX2LONG(base_value);
+    if (base < 0)
+        rb_raise(rb_eArgError, "negative radix");
+    else if (base < 2)
+        rb_raise(rb_eArgError, "invalid radix %ld", base);
 
     if (FIXNUM_P(num))
         return rb_fix_digits(num, base);
-    else if (RB_TYPE_P(num, T_BIGNUM))
-        return rb_int_digits_bigbase(num, LONG2FIX(base));
+    else if (RB_TYPE_P(num, T_BIGNUM) || RB_TYPE_P(base_value, T_BIGNUM))
+        return rb_int_digits_bigbase(num, base_value);
 
     return Qnil;
 }
@@ -5649,7 +5638,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
 
     rb_define_method(rb_cInteger, "size", int_size, 0);
-    rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
     /* An obsolete class, use Integer */
     rb_define_const(rb_cObject, "Fixnum", rb_cInteger);
