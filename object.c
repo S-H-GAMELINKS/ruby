@@ -29,6 +29,7 @@
 #include "internal/inits.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
+#include "internal/string.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -679,7 +680,6 @@ rb_any_to_s(VALUE obj)
     return str;
 }
 
-VALUE rb_str_escape(VALUE str);
 /*!
  * Convenient wrapper of \c Object#inspect.
  * Returns a human-readable string representation of \a obj,
