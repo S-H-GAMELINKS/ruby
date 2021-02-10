@@ -226,4 +226,19 @@ class Float
     Primitive.attr! 'inline'
     Primitive.cexpr! 'RFLOAT_VALUE(self) < 0.0 ? Qtrue : Qfalse'
   end
+
+  def nan?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'flo_is_nan_p(self)'
+  end
+
+  def infinite?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_flo_is_infinite_p(self)'
+  end
+
+  def finite?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_flo_is_finite_p(self)'
+  end
 end

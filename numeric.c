@@ -5621,9 +5621,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "round", flo_round, -1);
     rb_define_method(rb_cFloat, "truncate", flo_truncate, -1);
 
-    rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
-    rb_define_method(rb_cFloat, "infinite?", rb_flo_is_infinite_p, 0);
-    rb_define_method(rb_cFloat, "finite?",   rb_flo_is_finite_p, 0);
     rb_define_method(rb_cFloat, "next_float", flo_next_float, 0);
     rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
 }
