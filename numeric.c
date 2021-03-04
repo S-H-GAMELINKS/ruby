@@ -1641,18 +1641,6 @@ rb_float_abs(VALUE flt)
     return DBL2NUM(val);
 }
 
-/*
- *  call-seq:
- *     float.nan?  ->  true or false
- *
- *  Returns +true+ if +float+ is an invalid IEEE floating point number.
- *
- *     a = -1.0      #=> -1.0
- *     a.nan?        #=> false
- *     a = 0.0/0.0   #=> NaN
- *     a.nan?        #=> true
- */
-
 static VALUE
 flo_is_nan_p(VALUE num)
 {
@@ -1660,18 +1648,6 @@ flo_is_nan_p(VALUE num)
 
     return isnan(value) ? Qtrue : Qfalse;
 }
-
-/*
- *  call-seq:
- *     float.infinite?  ->  -1, 1, or nil
- *
- *  Returns +nil+, -1, or 1 depending on whether the value is
- *  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
- *
- *     (0.0).infinite?        #=> nil
- *     (-1.0/0.0).infinite?   #=> -1
- *     (+1.0/0.0).infinite?   #=> 1
- */
 
 VALUE
 rb_flo_is_infinite_p(VALUE num)
@@ -1684,14 +1660,6 @@ rb_flo_is_infinite_p(VALUE num)
 
     return Qnil;
 }
-
-/*
- *  call-seq:
- *     float.finite?  ->  true or false
- *
- *  Returns +true+ if +float+ is a valid IEEE floating point number,
- *  i.e. it is not infinite and Float#nan? is +false+.
- */
 
 VALUE
 rb_flo_is_finite_p(VALUE num)
@@ -5563,9 +5531,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "round", flo_round, -1);
     rb_define_method(rb_cFloat, "truncate", flo_truncate, -1);
 
-    rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
-    rb_define_method(rb_cFloat, "infinite?", rb_flo_is_infinite_p, 0);
-    rb_define_method(rb_cFloat, "finite?",   rb_flo_is_finite_p, 0);
     rb_define_method(rb_cFloat, "next_float", flo_next_float, 0);
     rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
 }

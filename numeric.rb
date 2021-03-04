@@ -272,4 +272,48 @@ class Float
     Primitive.attr! 'inline'
     Primitive.cexpr! 'RFLOAT_VALUE(self) < 0.0 ? Qtrue : Qfalse'
   end
+
+  #
+  #  call-seq:
+  #     float.nan?  ->  true or false
+  #
+  #  Returns +true+ if +float+ is an invalid IEEE floating point number.
+  #
+  #     a = -1.0      #=> -1.0
+  #     a.nan?        #=> false
+  #     a = 0.0/0.0   #=> NaN
+  #     a.nan?        #=> true
+  #
+  def nan?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'flo_is_nan_p(self)'
+  end
+
+  #
+  #  call-seq:
+  #     float.infinite?  ->  -1, 1, or nil
+  #
+  #  Returns +nil+, -1, or 1 depending on whether the value is
+  #  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
+  #
+  #     (0.0).infinite?        #=> nil
+  #     (-1.0/0.0).infinite?   #=> -1
+  #     (+1.0/0.0).infinite?   #=> 1
+  # 
+  def infinite?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_flo_is_infinite_p(self)'
+  end
+
+  #
+  #  call-seq:
+  #     float.finite?  ->  true or false
+  #
+  #  Returns +true+ if +float+ is a valid IEEE floating point number,
+  #  i.e. it is not infinite and Float#nan? is +false+.
+  # 
+  def finite?
+    Primitive.attr! 'inline'
+    Primitive.cexpr! 'rb_flo_is_finite_p(self)'
+  end
 end

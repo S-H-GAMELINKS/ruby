@@ -1,0 +1,10 @@
+prelude: |
+  flo = 4.2
+benchmark:
+  nan?: |
+    flo.nan?
+  infinite?: |
+    flo.infinite?
+  finite?: |
+    flo.finite?
+loop_count: 20000000
