@@ -538,13 +538,6 @@ num_dup(VALUE x)
 # define num_dup num_uplus
 #endif
 
-/*
- *  call-seq:
- *     +num  ->  num
- *
- *  Unary Plus---Returns the receiver.
- */
-
 static VALUE
 num_uplus(VALUE num)
 {
@@ -5367,7 +5360,6 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "dup", num_dup, 0);
 
     rb_define_method(rb_cNumeric, "i", num_imaginary, 0);
-    rb_define_method(rb_cNumeric, "+@", num_uplus, 0);
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);

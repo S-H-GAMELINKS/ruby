@@ -1,0 +1,6 @@
+prelude: |
+  num = 42
+benchmark:
+  +@: |
+    +num
+loop_count: 20000000

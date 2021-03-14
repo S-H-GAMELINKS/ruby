@@ -1,6 +1,15 @@
 class Numeric
   #
   #  call-seq:
+  #     +num  ->  num
+  #
+  #  Unary Plus---Returns the receiver.
+  #
+  def +@
+    return self
+  end
+  #
+  #  call-seq:
   #     num.real?  ->  true or false
   #
   #  Returns +true+ if +num+ is a real number (i.e. not Complex).
