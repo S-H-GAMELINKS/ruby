@@ -3071,7 +3071,7 @@ dir_each_child(VALUE dir)
  *
  *     Got config.h
  *     Got main.rb
- *
+ *  
  */
 static VALUE
 dir_s_each_child(int argc, VALUE *argv, VALUE io)
