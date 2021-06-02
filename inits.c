@@ -95,7 +95,7 @@ rb_call_builtin_inits(void)
     BUILTIN(pack);
     BUILTIN(warning);
     BUILTIN(array);
-    BUILTIN(kernel);
+    BUILTIN(object);
     BUILTIN(timev);
     Init_builtin_prelude();
 }

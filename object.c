@@ -1449,82 +1449,11 @@ nil_match(VALUE obj1, VALUE obj2)
     return Qnil;
 }
 
-/***********************************************************************
- *  Document-class: TrueClass
- *
- *  The global value <code>true</code> is the only instance of class
- *  TrueClass and represents a logically true value in
- *  boolean expressions. The class provides operators allowing
- *  <code>true</code> to be used in logical expressions.
- */
-
-
-/*
- * call-seq:
- *   true.to_s   ->  "true"
- *
- * The string representation of <code>true</code> is "true".
- */
-
-static VALUE
-true_to_s(VALUE obj)
-{
-    return rb_cTrueClass_to_s;
-}
-
-
-/*
- *  call-seq:
- *     true & obj    -> true or false
- *
- *  And---Returns <code>false</code> if <i>obj</i> is
- *  <code>nil</code> or <code>false</code>, <code>true</code> otherwise.
- */
-
 static VALUE
 true_and(VALUE obj, VALUE obj2)
 {
     return RTEST(obj2)?Qtrue:Qfalse;
 }
-
-/*
- *  call-seq:
- *     true | obj   -> true
- *
- *  Or---Returns <code>true</code>. As <i>obj</i> is an argument to
- *  a method call, it is always evaluated; there is no short-circuit
- *  evaluation in this case.
- *
- *     true |  puts("or")
- *     true || puts("logical or")
- *
- *  <em>produces:</em>
- *
- *     or
- */
-
-static VALUE
-true_or(VALUE obj, VALUE obj2)
-{
-    return Qtrue;
-}
-
-
-/*
- *  call-seq:
- *     true ^ obj   -> !obj
- *
- *  Exclusive Or---Returns <code>true</code> if <i>obj</i> is
- *  <code>nil</code> or <code>false</code>, <code>false</code>
- *  otherwise.
- */
-
-static VALUE
-true_xor(VALUE obj, VALUE obj2)
-{
-    return RTEST(obj2)?Qfalse:Qtrue;
-}
-
 
 /*
  *  Document-class: FalseClass
@@ -4952,11 +4881,6 @@ InitVM_Object(void)
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_cTrueClass_to_s = rb_fstring_enc_lit("true", rb_usascii_encoding());
     rb_gc_register_mark_object(rb_cTrueClass_to_s);
-    rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
-    rb_define_alias(rb_cTrueClass, "inspect", "to_s");
-    rb_define_method(rb_cTrueClass, "&", true_and, 1);
-    rb_define_method(rb_cTrueClass, "|", true_or, 1);
-    rb_define_method(rb_cTrueClass, "^", true_xor, 1);
     rb_define_method(rb_cTrueClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
@@ -4974,7 +4898,7 @@ InitVM_Object(void)
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
 }
 
-#include "kernel.rbinc"
+#include "object.rbinc"
 
 void
 Init_Object(void)

@@ -16,8 +16,8 @@ ast.rb
 dir.rb
 gc.rb
 io.rb
-kernel.rb
 numeric.rb
+object.rb
 pack.rb
 ractor.rb
 timev.rb

@@ -1028,7 +1028,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
-		$(srcdir)/kernel.rb \
+		$(srcdir)/object.rb \
 		$(srcdir)/ractor.rb \
 		$(srcdir)/timev.rb \
 		$(srcdir)/prelude.rb \
@@ -8343,7 +8343,6 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 miniinit.$(OBJEXT): {$(VPATH)}io.rb
 miniinit.$(OBJEXT): {$(VPATH)}iseq.h
-miniinit.$(OBJEXT): {$(VPATH)}kernel.rb
 miniinit.$(OBJEXT): {$(VPATH)}method.h
 miniinit.$(OBJEXT): {$(VPATH)}mini_builtin.c
 miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
@@ -8351,6 +8350,7 @@ miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
+miniinit.$(OBJEXT): {$(VPATH)}object.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
@@ -9371,10 +9371,10 @@ object.$(OBJEXT): {$(VPATH)}internal/value_type.h
 object.$(OBJEXT): {$(VPATH)}internal/variable.h
 object.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 object.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
-object.$(OBJEXT): {$(VPATH)}kernel.rb
-object.$(OBJEXT): {$(VPATH)}kernel.rbinc
 object.$(OBJEXT): {$(VPATH)}missing.h
 object.$(OBJEXT): {$(VPATH)}object.c
+object.$(OBJEXT): {$(VPATH)}object.rb
+object.$(OBJEXT): {$(VPATH)}object.rbinc
 object.$(OBJEXT): {$(VPATH)}onigmo.h
 object.$(OBJEXT): {$(VPATH)}oniguruma.h
 object.$(OBJEXT): {$(VPATH)}probes.dmyh
