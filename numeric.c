@@ -2286,57 +2286,120 @@ rb_int_truncate(VALUE num, int ndigits)
     }
 }
 
-/*
- *  call-seq:
- *     float.round([ndigits] [, half: mode])  ->  integer or float
- *
- *  Returns +float+ rounded to the nearest value with
- *  a precision of +ndigits+ decimal digits (default: 0).
- *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros.
- *
- *  Returns a floating point number when +ndigits+ is positive,
- *  otherwise returns an integer.
- *
- *     1.4.round      #=> 1
- *     1.5.round      #=> 2
- *     1.6.round      #=> 2
- *     (-1.5).round   #=> -2
- *
- *     1.234567.round(2)   #=> 1.23
- *     1.234567.round(3)   #=> 1.235
- *     1.234567.round(4)   #=> 1.2346
- *     1.234567.round(5)   #=> 1.23457
- *
- *     34567.89.round(-5)  #=> 0
- *     34567.89.round(-4)  #=> 30000
- *     34567.89.round(-3)  #=> 35000
- *     34567.89.round(-2)  #=> 34600
- *     34567.89.round(-1)  #=> 34570
- *     34567.89.round(0)   #=> 34568
- *     34567.89.round(1)   #=> 34567.9
- *     34567.89.round(2)   #=> 34567.89
- *     34567.89.round(3)   #=> 34567.89
- *
- *  If the optional +half+ keyword argument is given,
- *  numbers that are half-way between two possible rounded values
- *  will be rounded according to the specified tie-breaking +mode+:
- *
- *  * <code>:up</code> or +nil+: round half away from zero (default)
- *  * <code>:down</code>: round half toward zero
- *  * <code>:even</code>: round half toward the nearest even number
- *
- *     2.5.round(half: :up)      #=> 3
- *     2.5.round(half: :down)    #=> 2
- *     2.5.round(half: :even)    #=> 2
- *     3.5.round(half: :up)      #=> 4
- *     3.5.round(half: :down)    #=> 3
- *     3.5.round(half: :even)    #=> 4
- *     (-2.5).round(half: :up)   #=> -3
- *     (-2.5).round(half: :down) #=> -2
- *     (-2.5).round(half: :even) #=> -2
- */
+static enum ruby_num_rounding_mode
+rb_float_get_rounding_option(VALUE opt)
+{
+    VALUE str;
+    const char *s;
+	if (SYMBOL_P(opt)) {
+	    return rb_sym2str(opt);
+	}
+	else if (NIL_P(opt)) {
+	    goto noopt;
+	}
+	else if (!RB_TYPE_P(str = opt, T_STRING)) {
+	    str = rb_check_string_type(opt);
+	    if (NIL_P(str)) goto invalid;
+	}
+        rb_must_asciicompat(str);
+	s = RSTRING_PTR(str);
+	switch (RSTRING_LEN(str)) {
+	  case 2:
+	    if (rb_memcicmp(s, "up", 2) == 0)
+		return RUBY_NUM_ROUND_HALF_UP;
+	    break;
+	  case 4:
+	    if (rb_memcicmp(s, "even", 4) == 0)
+		return RUBY_NUM_ROUND_HALF_EVEN;
+	    if (strncasecmp(s, "down", 4) == 0)
+		return RUBY_NUM_ROUND_HALF_DOWN;
+	    break;
+	}
+      invalid:
+	rb_raise(rb_eArgError, "invalid rounding mode: % "PRIsVALUE, opt);
+  noopt:
+    return RUBY_NUM_ROUND_DEFAULT;
+}
+
+static VALUE
+flo_round0(rb_execution_context_t *ec, VALUE num)
+{
+    double number, f, x;
+    VALUE nd;
+    int ndigits = 0;
+    enum ruby_num_rounding_mode mode = RUBY_NUM_ROUND_HALF_UP;
+
+    nd = INT2NUM(ndigits);
+
+    number = RFLOAT_VALUE(num);
+    if (number == 0.0) {
+	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
+    }
+    if (ndigits < 0) {
+	return rb_int_round(flo_to_i(num), ndigits, mode);
+    }
+    if (ndigits == 0) {
+	x = ROUND_CALL(mode, round, (number, 1.0));
+	return dbl2ival(x);
+    }
+    if (isfinite(number)) {
+	int binexp;
+	frexp(number, &binexp);
+	if (float_round_overflow(ndigits, binexp)) return num;
+	if (float_round_underflow(ndigits, binexp)) return DBL2NUM(0);
+        if (ndigits > 14) {
+            VALUE argv[] = {
+                nd
+            };
+            /* In this case, pow(10, ndigits) may not be accurate. */
+            return rb_flo_round_by_rational(1, argv, num);
+        }
+	f = pow(10, ndigits);
+	x = ROUND_CALL(mode, round, (number, f));
+	return DBL2NUM(x / f);
+    }
+    return num;
+}
+
+static VALUE
+flo_round2(rb_execution_context_t *ec, VALUE num, VALUE nd, VALUE half)
+{
+    double number, f, x;
+    int ndigits = 0;
+    enum ruby_num_rounding_mode mode;
+
+	ndigits = NUM2INT(nd);
+    mode = rb_float_get_rounding_option(half);
+    number = RFLOAT_VALUE(num);
+    if (number == 0.0) {
+	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
+    }
+    if (ndigits < 0) {
+	return rb_int_round(flo_to_i(num), ndigits, mode);
+    }
+    if (ndigits == 0) {
+	x = ROUND_CALL(mode, round, (number, 1.0));
+	return dbl2ival(x);
+    }
+    if (isfinite(number)) {
+	int binexp;
+	frexp(number, &binexp);
+	if (float_round_overflow(ndigits, binexp)) return num;
+	if (float_round_underflow(ndigits, binexp)) return DBL2NUM(0);
+        if (ndigits > 14) {
+            VALUE argv[] = {
+                ndigits,
+                half
+            };
+            /* In this case, pow(10, ndigits) may not be accurate. */
+            return rb_flo_round_by_rational(2, argv, num);
+        }
+	f = pow(10, ndigits);
+	x = ROUND_CALL(mode, round, (number, f));
+	return DBL2NUM(x / f);
+    }
+    return num;
+}
 
 static VALUE
 flo_round(int argc, VALUE *argv, VALUE num)
@@ -6143,7 +6206,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "to_int", flo_to_i, 0);
     rb_define_method(rb_cFloat, "floor", flo_floor, -1);
     rb_define_method(rb_cFloat, "ceil", flo_ceil, -1);
-    rb_define_method(rb_cFloat, "round", flo_round, -1);
     rb_define_method(rb_cFloat, "truncate", flo_truncate, -1);
 
     rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
