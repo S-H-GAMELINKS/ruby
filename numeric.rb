@@ -10,6 +10,46 @@ class Numeric
   end
 
   #
+  # call-seq:
+  #    num.real  ->  self
+  #
+  # Returns self.
+  #
+  def real
+    return self
+  end
+
+  #
+  # call-seq:
+  #    num.imag       ->  0
+  #    num.imaginary  ->  0
+  #
+  # Returns zero.
+  #
+  def imag
+    return 0
+  end
+
+  def imaginary
+    return 0
+  end
+
+  #
+  # call-seq:
+  #    num.conj       ->  self
+  #    num.conjugate  ->  self
+  #
+  # Returns self.
+  #
+  def conj
+    return self
+  end
+
+  def conjugate
+    return self
+  end
+
+  #
   #  call-seq:
   #     num.integer?  ->  true or false
   #
