@@ -4822,7 +4822,7 @@ rb_ary_times(VALUE ary, VALUE times)
     len = NUM2LONG(times);
     if (len == 0) {
         ary2 = ary_new(rb_cArray, 0);
-	goto out;
+        return ary2;
     }
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
@@ -4847,7 +4847,6 @@ rb_ary_times(VALUE ary, VALUE times)
             ary_memcpy(ary2, t, len-t, RARRAY_CONST_PTR_TRANSIENT(ary2));
         }
     }
-  out:
     return ary2;
 }
 
