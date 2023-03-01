@@ -14186,69 +14186,14 @@ ripper_validate_object(VALUE self, VALUE x)
 
 #define validate(x) ((x) = get_value(x))
 
+<% (0..7).filter{_1!=6}.each do |num| -%> 
 static VALUE
-ripper_dispatch0(struct parser_params *p, ID mid)
+ripper_dispatch<%=num%>(struct parser_params *p, ID mid<%=num.times.map{", VALUE arg#{_1+1}"}.join%>)
 {
-    return rb_funcall(p->value, mid, 0);
+	<%=num.times.map{"validate(arg#{_1+1});\n"}.join("    ")%>
+	<%="return rb_funcall(p->value, mid, #{num}#{num.times.map{", arg#{_1+1}"}.join});"%>
 }
-
-static VALUE
-ripper_dispatch1(struct parser_params *p, ID mid, VALUE a)
-{
-    validate(a);
-    return rb_funcall(p->value, mid, 1, a);
-}
-
-static VALUE
-ripper_dispatch2(struct parser_params *p, ID mid, VALUE a, VALUE b)
-{
-    validate(a);
-    validate(b);
-    return rb_funcall(p->value, mid, 2, a, b);
-}
-
-static VALUE
-ripper_dispatch3(struct parser_params *p, ID mid, VALUE a, VALUE b, VALUE c)
-{
-    validate(a);
-    validate(b);
-    validate(c);
-    return rb_funcall(p->value, mid, 3, a, b, c);
-}
-
-static VALUE
-ripper_dispatch4(struct parser_params *p, ID mid, VALUE a, VALUE b, VALUE c, VALUE d)
-{
-    validate(a);
-    validate(b);
-    validate(c);
-    validate(d);
-    return rb_funcall(p->value, mid, 4, a, b, c, d);
-}
-
-static VALUE
-ripper_dispatch5(struct parser_params *p, ID mid, VALUE a, VALUE b, VALUE c, VALUE d, VALUE e)
-{
-    validate(a);
-    validate(b);
-    validate(c);
-    validate(d);
-    validate(e);
-    return rb_funcall(p->value, mid, 5, a, b, c, d, e);
-}
-
-static VALUE
-ripper_dispatch7(struct parser_params *p, ID mid, VALUE a, VALUE b, VALUE c, VALUE d, VALUE e, VALUE f, VALUE g)
-{
-    validate(a);
-    validate(b);
-    validate(c);
-    validate(d);
-    validate(e);
-    validate(f);
-    validate(g);
-    return rb_funcall(p->value, mid, 7, a, b, c, d, e, f, g);
-}
+<% end %>
 
 static ID
 ripper_get_id(VALUE v)
