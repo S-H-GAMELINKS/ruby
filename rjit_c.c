@@ -210,7 +210,7 @@ rjit_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     RUBY_ASSERT_ALWAYS(RUBYVM_CFUNC_FRAME_P(cfp));
-    RUBY_ASSERT_ALWAYS(me->def->type == VM_METHOD_TYPE_CFUNC);
+    RUBY_ASSERT_ALWAYS(VM_METHOD_TYPE_P(me->def->type, CFUNC));
 
     // CHECK_CFP_CONSISTENCY("full_cfunc_return"); TODO revive this
 

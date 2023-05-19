@@ -1247,7 +1247,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     /* bmethod */
     if (rb_obj_is_method(target)) {
         rb_method_definition_t *def = (rb_method_definition_t *)rb_method_def(target);
-        if (def->type == VM_METHOD_TYPE_BMETHOD &&
+        if (VM_METHOD_TYPE_P(def->type, BMETHOD) &&
             (tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN))) {
             if (def->body.bmethod.hooks == NULL) {
                 def->body.bmethod.hooks = ZALLOC(rb_hook_list_t);

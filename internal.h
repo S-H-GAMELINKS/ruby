@@ -105,6 +105,9 @@ RUBY_SYMBOL_EXPORT_END
 #define RBOOL(v) ((v) ? Qtrue : Qfalse)
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
+#define VM_METHOD_TYPE_P(type, name) \
+    (type) == VM_METHOD_TYPE_##name
+
 #ifndef __MINGW32__
 #undef memcpy
 #define memcpy ruby_nonempty_memcpy

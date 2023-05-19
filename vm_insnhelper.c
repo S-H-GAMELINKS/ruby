@@ -4041,7 +4041,7 @@ vm_call_zsuper(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
     if (cme == NULL) {
         return vm_call_method_nome(ec, cfp, calling);
     }
-    if (cme->def->type == VM_METHOD_TYPE_REFINED &&
+    if (VM_METHOD_TYPE_P(cme->def->type, REFINED) &&
         cme->def->body.refined.orig_me) {
         cme = refined_method_callable_without_refinement(cme);
     }
@@ -4218,7 +4218,7 @@ vm_call_opt_struct_aref0(rb_execution_context_t *ec, struct rb_calling_info *cal
     VALUE recv = calling->recv;
 
     VM_ASSERT(RB_TYPE_P(recv, T_STRUCT));
-    VM_ASSERT(vm_cc_cme(calling->cc)->def->type == VM_METHOD_TYPE_OPTIMIZED);
+    VM_ASSERT(VM_METHOD_TYPE_P(vm_cc_cme(calling->cc)->def->type, OPTIMIZED));
     VM_ASSERT(vm_cc_cme(calling->cc)->def->body.optimized.type == OPTIMIZED_METHOD_TYPE_STRUCT_AREF);
 
     const unsigned int off = vm_cc_cme(calling->cc)->def->body.optimized.index;
@@ -4241,7 +4241,7 @@ vm_call_opt_struct_aset0(rb_execution_context_t *ec, struct rb_calling_info *cal
     VALUE recv = calling->recv;
 
     VM_ASSERT(RB_TYPE_P(recv, T_STRUCT));
-    VM_ASSERT(vm_cc_cme(calling->cc)->def->type == VM_METHOD_TYPE_OPTIMIZED);
+    VM_ASSERT(VM_METHOD_TYPE_P(vm_cc_cme(calling->cc)->def->type, OPTIMIZED));
     VM_ASSERT(vm_cc_cme(calling->cc)->def->body.optimized.type == OPTIMIZED_METHOD_TYPE_STRUCT_ASET);
 
     rb_check_frozen(recv);
@@ -4575,7 +4575,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         }
     }
 
-    if (me->def->type == VM_METHOD_TYPE_BMETHOD && (vm_ci_flag(cd->ci) & VM_CALL_ZSUPER)) {
+    if (VM_METHOD_TYPE_P(me->def->type, BMETHOD) && (vm_ci_flag(cd->ci) & VM_CALL_ZSUPER)) {
         rb_raise(rb_eRuntimeError,
                  "implicit argument passing of super from method defined"
                  " by define_method() is not supported."
@@ -6423,7 +6423,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 
         if (bmethod_frame) {
             const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
-            VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
+            VM_ASSERT(VM_METHOD_TYPE_P(me->def->type, BMETHOD));
             bmethod_local_hooks = me->def->body.bmethod.hooks;
             bmethod_local_hooks_ptr = &me->def->body.bmethod.hooks;
             if (bmethod_local_hooks) {

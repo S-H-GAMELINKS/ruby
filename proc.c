@@ -1684,7 +1684,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
             rb_print_inaccessible(klass, id, visi);
         }
     }
-    if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
+    if (VM_METHOD_TYPE_P(me->def->type, ZSUPER)) {
         if (me->defined_class) {
             VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
             id = me->def->original_id;
@@ -2953,7 +2953,7 @@ method_cref(VALUE method)
 static VALUE
 method_def_location(const rb_method_definition_t *def)
 {
-    if (def->type == VM_METHOD_TYPE_ATTRSET || def->type == VM_METHOD_TYPE_IVAR) {
+    if (VM_METHOD_TYPE_P(def->type, ATTRSET) || VM_METHOD_TYPE_P(def->type, IVAR)) {
         if (!def->body.attr.location)
             return Qnil;
         return rb_ary_dup(def->body.attr.location);
@@ -3126,7 +3126,7 @@ method_inspect(VALUE method)
         mklass = RBASIC_CLASS(mklass);
     }
 
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
+    if (VM_METHOD_TYPE_P(data->me->def->type, ALIAS)) {
         defined_class = data->me->def->body.alias.original_me->owner;
     }
     else {
@@ -3180,7 +3180,7 @@ method_inspect(VALUE method)
         rb_str_catf(str, "(%"PRIsVALUE")",
                     rb_id2str(data->me->def->original_id));
     }
-    if (data->me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+    if (VM_METHOD_TYPE_P(data->me->def->type, NOTIMPLEMENTED)) {
         rb_str_buf_cat2(str, " (not-implemented)");
     }
 
@@ -3363,7 +3363,7 @@ method_super_method(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
     if (!iclass) return Qnil;
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
+    if (VM_METHOD_TYPE_P(data->me->def->type, ALIAS) && data->me->defined_class) {
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
             data->me->def->body.alias.original_me->owner));
         mid = data->me->def->body.alias.original_me->def->original_id;

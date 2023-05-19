@@ -201,9 +201,9 @@ struct rb_id_table;
 typedef struct rb_method_definition_struct rb_method_definition_t;
 STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
 
-#define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
+#define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || VM_METHOD_TYPE_P((me)->def->type, UNDEF))
 #define UNDEFINED_REFINED_METHOD_P(def) \
-    ((def)->type == VM_METHOD_TYPE_REFINED && \
+    (VM_METHOD_TYPE_P((def)->type, REFINED) && \
      UNDEFINED_METHOD_ENTRY_P((def)->body.refined.orig_me))
 
 void rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);

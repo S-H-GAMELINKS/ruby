@@ -91,7 +91,7 @@ vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
     VALUE *use_argv = (VALUE *)argv;
     VALUE av[2];
 
-    if (UNLIKELY(vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ && argc > VM_ARGC_STACK_MAX)) {
+    if (UNLIKELY(VM_METHOD_TYPE_P(vm_cc_cme(cc)->def->type, ISEQ) && argc > VM_ARGC_STACK_MAX)) {
         use_argv = vm_argv_ruby_array(av, argv, &flags, &argc, kw_splat);
     }
 
@@ -836,7 +836,7 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
     if (UNLIKELY(UNDEFINED_METHOD_ENTRY_P(me))) {
         goto undefined;
     }
-    else if (UNLIKELY(me->def->type == VM_METHOD_TYPE_REFINED)) {
+    else if (UNLIKELY(VM_METHOD_TYPE_P(me->def->type, REFINED))) {
         me = rb_resolve_refined_method_callable(Qnil, me);
         if (UNDEFINED_METHOD_ENTRY_P(me)) goto undefined;
     }

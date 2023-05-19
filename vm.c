@@ -1395,7 +1395,7 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
     int arg_size = ISEQ_BODY(iseq)->param.size;
     VALUE ret;
 
-    VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
+    VM_ASSERT(VM_METHOD_TYPE_P(me->def->type, BMETHOD));
 
     vm_push_frame(ec, iseq, type | VM_FRAME_FLAG_BMETHOD, self,
                   VM_GUARDED_PREV_EP(captured->ep),
@@ -2179,7 +2179,7 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
                                               rb_vm_frame_method_entry(ec->cfp)->owner,
                                               bmethod_return_value);
 
-                VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
+                VM_ASSERT(VM_METHOD_TYPE_P(me->def->type, BMETHOD));
                 local_hooks = me->def->body.bmethod.hooks;
 
                 if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_RETURN)) {

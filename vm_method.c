@@ -226,7 +226,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                     VALUE owner = cme->owner;
                     VM_ASSERT(BUILTIN_TYPE(owner) == T_CLASS);
                     VALUE klass_housing_cme;
-                    if (cme->def->type == VM_METHOD_TYPE_REFINED && !cme->def->body.refined.orig_me) {
+                    if (VM_METHOD_TYPE_P(cme->def->type, REFINED) && !cme->def->body.refined.orig_me) {
                         klass_housing_cme = owner;
                     }
                     else {
@@ -414,7 +414,7 @@ rb_method_definition_release(rb_method_definition_t *def, int complemented)
         if (alias_count + complemented_count == 0) {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d,%d (remove)\n", (void *)def,
                                       rb_id2name(def->original_id), alias_count, complemented_count);
-            if (def->type == VM_METHOD_TYPE_BMETHOD && def->body.bmethod.hooks) {
+            if (VM_METHOD_TYPE_P(def->type, BMETHOD) && def->body.bmethod.hooks) {
                 xfree(def->body.bmethod.hooks);
             }
             xfree(def);
@@ -714,7 +714,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
     } refined = {0};
 
     if (!src_me->defined_class &&
-        def->type == VM_METHOD_TYPE_REFINED &&
+        VM_METHOD_TYPE_P(def->type, REFINED) &&
         def->body.refined.orig_me) {
         const rb_method_entry_t *orig_me =
             rb_method_entry_clone(def->body.refined.orig_me);
@@ -753,7 +753,7 @@ rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
 static void
 make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
 {
-    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (VM_METHOD_TYPE_P(me->def->type, REFINED)) {
         return;
     }
     else {
@@ -873,7 +873,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         VALUE refined_class = rb_refinement_module_get_refined_class(klass);
         rb_add_refined_method_entry(refined_class, mid);
     }
-    if (type == VM_METHOD_TYPE_REFINED) {
+    if (VM_METHOD_TYPE_P(type, REFINED)) {
         rb_method_entry_t *old_me = lookup_method_table(RCLASS_ORIGIN(klass), mid);
         if (old_me) rb_vm_check_redefinition_opt_method(old_me, klass);
     }
@@ -893,7 +893,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         if (rb_method_definition_eq(old_def, def)) return old_me;
         rb_vm_check_redefinition_opt_method(old_me, klass);
 
-        if (old_def->type == VM_METHOD_TYPE_REFINED) make_refined = 1;
+        if (VM_METHOD_TYPE_P(old_def->type, REFINED)) make_refined = 1;
 
         if (RTEST(ruby_verbose) &&
             type != VM_METHOD_TYPE_UNDEF &&
@@ -944,7 +944,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
     /* check mid */
     if (mid == object_id || mid == id__send__) {
-        if (type == VM_METHOD_TYPE_ISEQ && search_method(klass, mid, 0)) {
+        if (VM_METHOD_TYPE_P(type, ISEQ) && search_method(klass, mid, 0)) {
             rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
         }
     }
@@ -1071,7 +1071,7 @@ check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_call
     if (UNLIKELY(cme->def->iseq_overload) &&
         (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&
         (int)vm_ci_argc(ci) == ISEQ_BODY(method_entry_iseqptr(cme))->param.lead_num) {
-        VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ); // iseq_overload is marked only on ISEQ methods
+        VM_ASSERT(VM_METHOD_TYPE_P(cme->def->type, ISEQ)); // iseq_overload is marked only on ISEQ methods
 
         cme = get_overloaded_cme(cme);
 
@@ -1421,7 +1421,7 @@ method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *
     const rb_method_entry_t *me = search_method_protect(klass, id, defined_class_ptr);
 
     if (me) {
-        if (me->def->type == VM_METHOD_TYPE_REFINED) {
+        if (VM_METHOD_TYPE_P(me->def->type, REFINED)) {
             if (with_refinement) {
                 const rb_cref_t *cref = rb_vm_cref();
                 VALUE refinements = cref ? CREF_REFINEMENTS(cref) : Qnil;
@@ -1494,7 +1494,7 @@ rb_callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_
 static const rb_method_entry_t *
 resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *defined_class_ptr)
 {
-    while (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+    while (me && VM_METHOD_TYPE_P(me->def->type, REFINED)) {
         VALUE refinement;
         const rb_method_entry_t *tmp_me;
         VALUE super;
@@ -1559,7 +1559,7 @@ remove_method(VALUE klass, ID mid)
 
     if (!rb_id_table_lookup(RCLASS_M_TBL(klass), mid, &data) ||
         !(me = (rb_method_entry_t *)data) ||
-        (!me->def || me->def->type == VM_METHOD_TYPE_UNDEF) ||
+        (!me->def || VM_METHOD_TYPE_P(me->def->type, UNDEF)) ||
         UNDEFINED_REFINED_METHOD_P(me->def)) {
         rb_name_err_raise("method `%1$s' not defined in %2$s",
                           klass, ID2SYM(mid));
@@ -1573,7 +1573,7 @@ remove_method(VALUE klass, ID mid)
 
     rb_vm_check_redefinition_opt_method(me, klass);
 
-    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (VM_METHOD_TYPE_P(me->def->type, REFINED)) {
         rb_add_refined_method_entry(klass, mid);
     }
 
@@ -1641,7 +1641,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
         rb_vm_check_redefinition_opt_method(me, klass);
 
         if (klass == defined_class || origin_class == defined_class) {
-            if (me->def->type == VM_METHOD_TYPE_REFINED) {
+            if (VM_METHOD_TYPE_P(me->def->type, REFINED)) {
                 // Refinement method entries should always be public because the refinement
                 // search is always performed.
                 if (me->def->body.refined.orig_me) {
@@ -1688,7 +1688,7 @@ method_boundp(VALUE klass, ID id, int ex)
             }
         }
 
-        if (cme->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+        if (VM_METHOD_TYPE_P(cme->def->type, NOTIMPLEMENTED)) {
             if (ex & BOUND_RESPONDS) return 2;
             return 0;
         }
@@ -1788,7 +1788,7 @@ rb_undef(VALUE klass, ID id)
     }
 
     me = search_method(klass, id, 0);
-    if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (me && VM_METHOD_TYPE_P(me->def->type, REFINED)) {
         me = rb_resolve_refined_method(Qnil, me);
     }
 
@@ -1886,7 +1886,7 @@ check_definition_visibility(VALUE mod, int argc, VALUE *argv)
 
     me = rb_method_entry_without_refinements(lookup_mod, id, NULL);
     if (me) {
-        if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) return METHOD_VISI_UNDEF;
+        if (VM_METHOD_TYPE_P(me->def->type, NOTIMPLEMENTED)) return METHOD_VISI_UNDEF;
         if (!inc_super && me->owner != mod) return METHOD_VISI_UNDEF;
         return METHOD_ENTRY_VISI(me);
     }
@@ -2174,7 +2174,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
   again:
     orig_me = search_method(klass, original_name, &defined_class);
 
-    if (orig_me && orig_me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (orig_me && VM_METHOD_TYPE_P(orig_me->def->type, REFINED)) {
         orig_me = rb_resolve_refined_method(Qnil, orig_me);
     }
 

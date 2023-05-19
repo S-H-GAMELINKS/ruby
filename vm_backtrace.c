@@ -1606,7 +1606,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 
             /* record frame info */
             cme = rb_vm_frame_method_entry(cfp);
-            if (cme && cme->def->type == VM_METHOD_TYPE_ISEQ) {
+            if (cme && VM_METHOD_TYPE_P(cme->def->type, ISEQ)) {
                 buff[i] = (VALUE)cme;
             }
             else {
@@ -1619,7 +1619,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
         }
         else {
             cme = rb_vm_frame_method_entry(cfp);
-            if (cme && cme->def->type == VM_METHOD_TYPE_CFUNC) {
+            if (cme && VM_METHOD_TYPE_P(cme->def->type, CFUNC)) {
                 buff[i] = (VALUE)cme;
                 if (lines) lines[i] = 0;
                 i++;

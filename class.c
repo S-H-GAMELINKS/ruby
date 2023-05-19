@@ -370,7 +370,7 @@ rb_class_s_alloc(VALUE klass)
 static void
 clone_method(VALUE old_klass, VALUE new_klass, ID mid, const rb_method_entry_t *me)
 {
-    if (me->def->type == VM_METHOD_TYPE_ISEQ) {
+    if (VM_METHOD_TYPE_P(me->def->type, ISEQ)) {
         rb_cref_t *new_cref;
         rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass, &new_cref);
         rb_add_method_iseq(new_klass, mid, me->def->body.iseq.iseqptr, new_cref, METHOD_ENTRY_VISI(me));
@@ -1364,7 +1364,7 @@ move_refined_method(ID key, VALUE value, void *data)
 {
     rb_method_entry_t *me = (rb_method_entry_t *)value;
 
-    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (VM_METHOD_TYPE_P(me->def->type, REFINED)) {
         VALUE klass = (VALUE)data;
         struct rb_id_table *tbl = RCLASS_M_TBL(klass);
 
@@ -1391,7 +1391,7 @@ cache_clear_refined_method(ID key, VALUE value, void *data)
 {
     rb_method_entry_t *me = (rb_method_entry_t *) value;
 
-    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
+    if (VM_METHOD_TYPE_P(me->def->type, REFINED) && me->def->body.refined.orig_me) {
         VALUE klass = (VALUE)data;
         rb_clear_method_cache(klass, me->called_id);
     }
@@ -1771,7 +1771,7 @@ method_entry_i(ID key, VALUE value, void *data)
     struct method_entry_arg *arg = (struct method_entry_arg *)data;
     rb_method_visibility_t type;
 
-    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (VM_METHOD_TYPE_P(me->def->type, REFINED)) {
         VALUE owner = me->owner;
         me = rb_resolve_refined_method(Qnil, me);
         if (!me) return ID_TABLE_CONTINUE;
