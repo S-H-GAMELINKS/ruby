@@ -284,6 +284,81 @@ parse_isxdigit(int c)
 #undef STRNCASECMP
 #define STRNCASECMP rb_parser_st_locale_insensitive_strncasecmp
 
+// Reduce dependency to Misc for Universal Parser
+#undef RBOOL
+#define RBOOL(v) ((v) ? Qtrue : Qfalse)
+
+static inline bool
+PARSER_UNDEF_P(VALUE obj)
+{
+    return obj == RUBY_Qundef;
+}
+
+#undef UNDEF_P
+#define UNDEF_P PARSER_UNDEF_P
+
+static inline bool
+PARSER_RB_TEST(VALUE obj)
+{
+    return obj & ~RUBY_Qnil;
+}
+
+#undef RTEST
+#define RTEST PARSER_RB_TEST
+
+static inline bool
+PARSER_RB_FLONUM_P(VALUE obj)
+{
+#if USE_FLONUM
+    return (obj & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG;
+#else
+    return false;
+#endif
+}
+
+#undef FLONUM_P
+#define FLONUM_P PARSER_RB_FLONUM_P
+
+// Reduce dependency to Fixnum for Universal Parser
+
+#undef RUBY_FIXNUM_MAX
+#define RUBY_FIXNUM_MAX  (LONG_MAX / 2)
+
+#undef RUBY_FIXNUM_MIN
+#define RUBY_FIXNUM_MIN  (LONG_MIN / 2)
+
+#undef RB_POSFIXABLE
+#define RB_POSFIXABLE(_) ((_) <  RUBY_FIXNUM_MAX + 1)
+
+#undef RB_NEGFIXABLE
+#define RB_NEGFIXABLE(_) ((_) >= RUBY_FIXNUM_MIN)
+
+#undef RB_FIXABLE
+#define RB_FIXABLE(_)    (RB_POSFIXABLE(_) && RB_NEGFIXABLE(_))
+static inline VALUE
+RASER_RB_INT2FIX(long i)
+{
+    RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(i));
+
+    /* :NOTE: VALUE can be wider than long.  As j being unsigned, 2j+1 is fully
+     * defined. Also it can be compiled into a single LEA instruction. */
+    const unsigned long j = i;
+    const unsigned long k = (j << 1) + RUBY_FIXNUM_FLAG;
+    const long          l = k;
+    const SIGNED_VALUE  m = l; /* Sign extend */
+    const VALUE         n = m;
+
+    RBIMPL_ASSERT_OR_ASSUME(FIXNUM_P(n));
+    return n;
+}
+
+#undef INT2FIX
+#define INT2FIX RASER_RB_INT2FIX
+
+#undef LONG2FIX
+#define LONG2FIX RASER_RB_INT2FIX
+
+
 #ifdef RIPPER
 #include "ripper_init.h"
 #endif

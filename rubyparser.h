@@ -452,13 +452,9 @@ typedef struct rb_parser_config_struct {
     VALUE (*hash_lookup)(VALUE hash, VALUE key);
     VALUE (*ident_hash_new)(void);
 
-    /* Fixnum */
-    VALUE (*int2fix)(long i);
-
     /* Bignum */
     void (*bignum_negate)(VALUE b);
     VALUE (*big_norm)(VALUE x);
-    VALUE (*int2big)(intptr_t n);
     VALUE (*cstr_to_inum)(const char *str, int base, int badcheck);
 
     /* Float */
@@ -587,11 +583,7 @@ typedef struct rb_parser_config_struct {
     double (*strtod)(const char *s00, char **se);
 
     /* Misc */
-    VALUE (*rbool)(VALUE);
-    int (*undef_p)(VALUE);
-    int (*rtest)(VALUE obj);
     int (*nil_p)(VALUE obj);
-    int (*flonum_p)(VALUE obj);
     VALUE qnil;
     VALUE qtrue;
     VALUE qfalse;

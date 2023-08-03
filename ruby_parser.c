@@ -677,11 +677,8 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->hash_lookup    = rb_hash_lookup;
     config->ident_hash_new = rb_ident_hash_new;
 
-    config->int2fix = int2fix;
-
     config->bignum_negate = bignum_negate;
     config->big_norm      = rb_big_norm;
-    config->int2big       = rb_int2big;
     config->cstr_to_inum  = rb_cstr_to_inum;
 
     config->float_new   = rb_float_new;
@@ -790,11 +787,7 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->scan_digits = ruby_scan_digits;
     config->strtod      = ruby_strtod;
 
-    config->rbool = rbool;
-    config->undef_p = undef_p;
-    config->rtest = rtest;
     config->nil_p = nil_p;
-    config->flonum_p = flonum_p;
     config->qnil  = Qnil;
     config->qtrue = Qtrue;
     config->qfalse = Qfalse;

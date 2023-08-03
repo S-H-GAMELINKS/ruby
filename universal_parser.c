@@ -218,14 +218,8 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_hash_lookup    p->config->hash_lookup
 #define rb_ident_hash_new p->config->ident_hash_new
 
-#undef INT2FIX
-#define INT2FIX  p->config->int2fix
-#undef LONG2FIX
-#define LONG2FIX p->config->int2fix
-
 #define bignum_negate p->config->bignum_negate
 #define rb_big_norm   p->config->big_norm
-#define rb_int2big    p->config->int2big
 #define rb_cstr_to_inum p->config->cstr_to_inum
 
 #define rb_float_new   p->config->float_new
@@ -343,16 +337,6 @@ struct rb_imemo_tmpbuf_struct {
 #define ruby_scan_digits p->config->scan_digits
 #define strtod           p->config->strtod
 
-#undef RBOOL
-#define RBOOL p->config->rbool
-#undef UNDEF_P
-#define UNDEF_P p->config->undef_p
-#undef RTEST
-#define RTEST p->config->rtest
-#undef NIL_P
-#define NIL_P p->config->nil_p
-#undef FLONUM_P
-#define FLONUM_P p->config->flonum_p
 #undef Qnil
 #define Qnil  p->config->qnil
 #undef Qtrue
