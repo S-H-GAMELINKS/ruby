@@ -894,6 +894,9 @@ static NODE* node_newnode_with_locals(struct parser_params *, enum node_type, VA
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE, const rb_code_location_t*);
 #define rb_node_newnode(type, a1, a2, a3, loc) node_newnode(p, (type), (a1), (a2), (a3), (loc))
 
+static NODE* node_new_literal_node(struct parser_params *, enum node_type, VALUE, rb_literal_t, const rb_code_location_t*);
+#define rb_node_new_literal_node(type, v, l, loc) node_new_literal_node(p, (v), (type), (l), (loc))
+
 /* Make a new temporal node, which should not be appeared in the
  * result AST and does not have node_id and location. */
 static NODE* node_new_temporal(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
@@ -6281,6 +6284,11 @@ do { \
   set_yylval_node(NEW_LIT(x, &_cur_loc)); \
   RB_OBJ_WRITTEN(p->ast, Qnil, x); \
 } while(0)
+# define set_yylval_literal_with_struct(x, literal) \
+do { \
+  set_yylval_node(NEW_LIT_STRUCT(x, literal, &_cur_loc)); \
+  RB_OBJ_WRITTEN(p->ast, Qnil, x); \
+} while(0)
 # define set_yylval_num(x) (yylval.num = (x))
 # define set_yylval_id(x)  (yylval.id = (x))
 # define set_yylval_name(x)  (yylval.id = (x))
@@ -8389,7 +8397,12 @@ set_number_literal(struct parser_params *p, VALUE v,
         v = rb_complex_raw(INT2FIX(0), v);
         type = tIMAGINARY;
     }
-    set_yylval_literal(v);
+    if (type == tIMAGINARY) {
+        rb_literal_t literal = { .val = ""};
+        set_yylval_literal_with_struct(v, literal);
+    } else {
+        set_yylval_literal(v);
+    }
     SET_LEX_STATE(EXPR_END);
     return type;
 }
@@ -10617,7 +10630,6 @@ static NODE*
 node_new_temporal(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
     NODE *n = rb_ast_newnode(p->ast, type);
-
     rb_node_init(n, type, a0, a1, a2);
     return n;
 }
@@ -10627,6 +10639,16 @@ node_newnode(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, V
 {
     NODE *n = node_new_temporal(p, type, a0, a1, a2);
 
+    nd_set_loc(n, loc);
+    nd_set_node_id(n, parser_get_node_id(p));
+    return n;
+}
+
+static NODE*
+node_new_literal_node(struct parser_params *p, enum node_type type, VALUE val, rb_literal_t literal, const rb_code_location_t *loc)
+{
+    NODE *n = rb_ast_newnode(p->ast, type);
+    rb_node_init_with_literal(n, type, val, literal);
     nd_set_loc(n, loc);
     nd_set_node_id(n, parser_get_node_id(p));
     return n;

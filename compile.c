@@ -4320,6 +4320,12 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         else {
             return rb_fstring(node->nd_lit);
         }
+      case NODE_LIT:
+        if (node->nd_literal != NULL && node->nd_literal->val != NULL) {
+            const char *val = node->nd_literal->val;
+            printf("Literal");
+        }
+        return node->nd_lit;
       default:
         return node->nd_lit;
     }

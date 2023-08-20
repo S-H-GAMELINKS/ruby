@@ -156,6 +156,7 @@ enum node_type {
 #define nd_aid   u3.id
 
 #define nd_lit   u1.value
+#define nd_literal literal
 
 #define nd_recv  u1.node
 #define nd_mid   u2.id
@@ -227,8 +228,13 @@ typedef struct rb_code_location_struct {
     rb_code_position_t end_pos;
 } rb_code_location_t;
 
+typedef struct rb_literal_struct {
+    const char *val;
+} rb_literal_t;
+
 typedef struct RNode {
     VALUE flags;
+    rb_literal_t *literal;
     union {
         struct RNode *node;
         ID id;

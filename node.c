@@ -55,9 +55,26 @@ rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
     n->flags = T_NODE;
     nd_init_type(n, type);
+    n->literal = NULL;
     n->u1.value = a0;
     n->u2.value = a1;
     n->u3.value = a2;
+    n->nd_loc.beg_pos.lineno = 0;
+    n->nd_loc.beg_pos.column = 0;
+    n->nd_loc.end_pos.lineno = 0;
+    n->nd_loc.end_pos.column = 0;
+    n->node_id = -1;
+}
+
+void
+rb_node_init_with_literal(NODE *n, enum node_type type, VALUE val, rb_literal_t literal)
+{
+    n->flags = T_NODE;
+    nd_init_type(n, type);
+    n->literal = &literal;
+    n->u1.value = val;
+    n->u2.value = 0;
+    n->u3.value = 0;
     n->nd_loc.beg_pos.lineno = 0;
     n->nd_loc.beg_pos.column = 0;
     n->nd_loc.end_pos.lineno = 0;

@@ -26,6 +26,7 @@ code_loc_gen(const rb_code_location_t *loc1, const rb_code_location_t *loc2)
 
 
 #define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
+#define NEW_LITERAL_NODE(t, v, l, loc) rb_node_new_literal_node((t), (VALUE)(v), (rb_literal_t)(l), loc)
 #define NEW_NODE_WITH_LOCALS(t,a1,a2,loc) node_newnode_with_locals(p, (t),(VALUE)(a1),(VALUE)(a2),loc)
 
 #define NEW_DEFN(i,a,d,loc) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d,loc),loc)
@@ -83,6 +84,7 @@ code_loc_gen(const rb_code_location_t *loc1, const rb_code_location_t *loc2)
 #define NEW_MATCH2(n1,n2,loc) NEW_NODE(NODE_MATCH2,n1,n2,0,loc)
 #define NEW_MATCH3(r,n2,loc) NEW_NODE(NODE_MATCH3,r,n2,0,loc)
 #define NEW_LIT(l,loc) NEW_NODE(NODE_LIT,l,0,0,loc)
+#define NEW_LIT_STRUCT(l, literal, loc) NEW_LITERAL_NODE(NODE_LIT, l, literal, loc)
 #define NEW_STR(s,loc) NEW_NODE(NODE_STR,s,0,0,loc)
 #define NEW_DSTR(s,loc) NEW_NODE(NODE_DSTR,s,1,0,loc)
 #define NEW_XSTR(s,loc) NEW_NODE(NODE_XSTR,s,0,0,loc)
