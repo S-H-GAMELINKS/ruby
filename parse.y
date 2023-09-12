@@ -876,7 +876,9 @@ static NODE* node_newnode_with_locals(struct parser_params *, enum node_type, VA
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE, const rb_code_location_t*);
 #define rb_node_newnode(type, a1, a2, a3, loc) node_newnode(p, (type), (a1), (a2), (a3), (loc))
 
-/* Make a new internal node, which should not be appeared in the
+static NODE* node_new_literal_node(struct parser_params *, enum node_type, rb_literal_t*, const rb_code_location_t*);
+
+/* Make a new temporal node, which should not be appeared in the
  * result AST and does not have node_id and location. */
 static NODE* node_new_internal(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
 #define NODE_NEW_INTERNAL(t,a0,a1,a2) node_new_internal(p, (t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
@@ -981,7 +983,7 @@ static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
 
-static VALUE negate_lit(struct parser_params*, VALUE);
+static void negate_lit(struct parser_params*, NODE*);
 static NODE *ret_args(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,NODE*);
 static NODE *new_yield(struct parser_params*,NODE*,const YYLTYPE*);
@@ -5493,7 +5495,7 @@ numeric 	: simple_numeric
                     {
                     /*%%%*/
                         $$ = $2;
-                        RB_OBJ_WRITE(p->ast, &$$->nd_lit, negate_lit(p, $$->nd_lit));
+                        negate_lit(p, $$);
                     /*% %*/
                     /*% ripper: unary!(ID2VAL(idUMinus), $2) %*/
                     }
@@ -6277,6 +6279,16 @@ do { \
   set_yylval_node(NEW_LIT(x, &_cur_loc)); \
   RB_OBJ_WRITTEN(p->ast, Qnil, x); \
 } while(0)
+# define set_yylval_node_with_struct(x) {				\
+  YYLTYPE _cur_loc;					\
+  RB_OBJ_WRITTEN(p->ast, Qnil, x->nd_lit); \
+  rb_parser_set_location(p, &_cur_loc);			\
+  yylval.node = (x);					\
+}
+# define set_yylval_literal_with_struct(literal) \
+do { \
+  set_yylval_node_with_struct(NEW_LIT_STRUCT(literal, &_cur_loc)); \
+} while(0)
 # define set_yylval_num(x) (yylval.num = (x))
 # define set_yylval_id(x)  (yylval.id = (x))
 # define set_yylval_name(x)  (yylval.id = (x))
@@ -6292,6 +6304,7 @@ ripper_yylval_id(struct parser_params *p, ID x)
 # define set_yylval_id(x)  (void)(x)
 # define set_yylval_name(x) (void)(yylval.val = ripper_yylval_id(p, x))
 # define set_yylval_literal(x) add_mark_object(p, (x))
+# define set_yylval_literal_with_struct(literal) (void)(literal)
 # define set_yylval_node(x) (yylval.val = ripper_new_yylval(p, 0, 0, STR_NEW(p->lex.ptok, p->lex.pcur-p->lex.ptok)))
 # define yylval_id() yylval.id
 # define _cur_loc NULL_LOC /* dummy */
@@ -8365,27 +8378,36 @@ number_literal_suffix(struct parser_params *p, int mask)
 }
 
 static enum yytokentype
-set_number_literal(struct parser_params *p, VALUE v,
-                   enum yytokentype type, int suffix)
+set_number_literal(struct parser_params *p, enum yytokentype type, int suffix, int base, int seen_point)
 {
-    if (suffix & NUM_SUFFIX_I) {
-        v = rb_complex_raw(INT2FIX(0), v);
-        type = tIMAGINARY;
-    }
-    set_yylval_literal(v);
-    SET_LEX_STATE(EXPR_END);
-    return type;
-}
-
-static enum yytokentype
-set_integer_literal(struct parser_params *p, VALUE v, int suffix)
-{
-    enum yytokentype type = tINTEGER;
     if (suffix & NUM_SUFFIX_R) {
-        v = rb_rational_raw1(v);
         type = tRATIONAL;
     }
-    return set_number_literal(p, v, type, suffix);
+
+    rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+    literal->val = strdup(tok(p));
+    literal->numeric_literal_info.tminus = FALSE;
+    literal->numeric_literal_info.base = base;
+    literal->numeric_literal_info.seen_point = seen_point;
+    literal->numeric_literal_info.is_imaginary = FALSE;
+
+    if (type == tINTEGER) {
+        literal->type = integer_literal;
+    }
+    else if (type == tFLOAT) {
+        literal->type = float_literal;
+    }
+    else if (type == tRATIONAL) {
+        literal->type = rational_literal;
+    }
+
+    if (suffix & NUM_SUFFIX_I) {
+        type = tIMAGINARY;
+        literal->numeric_literal_info.is_imaginary = TRUE;
+    }
+    set_yylval_literal_with_struct(literal);
+    SET_LEX_STATE(EXPR_END);
+    return type;
 }
 
 #ifdef RIPPER
@@ -9067,24 +9089,13 @@ parser_prepare(struct parser_params *p)
      (ambiguous_operator(tok, op, syn), 0)), \
      (enum yytokentype)(tok))
 
-static VALUE
-parse_rational(struct parser_params *p, char *str, int len, int seen_point)
-{
-    VALUE v;
-    char *point = &str[seen_point];
-    size_t fraclen = len-seen_point-1;
-    memmove(point, point+1, fraclen+1);
-    v = rb_cstr_to_inum(str, 10, FALSE);
-    return rb_rational_new(v, rb_int_positive_pow(10, fraclen));
-}
-
 static enum yytokentype
 no_digits(struct parser_params *p)
 {
     yyerror0("numeric literal without digits");
     if (peek(p, '_')) nextc(p);
     /* dummy 0, for tUMINUS_NUM at numeric */
-    return set_integer_literal(p, INT2FIX(0), 0);
+    return set_number_literal(p, tINTEGER, 0, 10, 0);
 }
 
 static enum yytokentype
@@ -9125,7 +9136,7 @@ parse_numeric(struct parser_params *p, int c)
             }
             else if (nondigit) goto trailing_uc;
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, rb_cstr_to_inum(tok(p), 16, FALSE), suffix);
+            return set_number_literal(p, tINTEGER, suffix, 16, 0);
         }
         if (c == 'b' || c == 'B') {
             /* binary */
@@ -9149,7 +9160,7 @@ parse_numeric(struct parser_params *p, int c)
             }
             else if (nondigit) goto trailing_uc;
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, rb_cstr_to_inum(tok(p), 2, FALSE), suffix);
+            return set_number_literal(p, tINTEGER, suffix, 2, 0);
         }
         if (c == 'd' || c == 'D') {
             /* decimal */
@@ -9173,7 +9184,7 @@ parse_numeric(struct parser_params *p, int c)
             }
             else if (nondigit) goto trailing_uc;
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, rb_cstr_to_inum(tok(p), 10, FALSE), suffix);
+            return set_number_literal(p, tINTEGER, suffix, 10, 0);
         }
         if (c == '_') {
             /* 0_0 */
@@ -9205,7 +9216,7 @@ parse_numeric(struct parser_params *p, int c)
                 tokfix(p);
                 if (nondigit) goto trailing_uc;
                 suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-                return set_integer_literal(p, rb_cstr_to_inum(tok(p), 8, FALSE), suffix);
+                return set_number_literal(p, tINTEGER, suffix, 8, 0);
             }
             if (nondigit) {
                 pushback(p, c);
@@ -9221,8 +9232,9 @@ parse_numeric(struct parser_params *p, int c)
         }
         else {
             pushback(p, c);
+            tokfix(p);
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, INT2FIX(0), suffix);
+            return set_number_literal(p, tINTEGER, suffix, 10, 0);
         }
     }
 
@@ -9302,25 +9314,22 @@ parse_numeric(struct parser_params *p, int c)
     tokfix(p);
     if (is_float) {
         enum yytokentype type = tFLOAT;
-        VALUE v;
 
         suffix = number_literal_suffix(p, seen_e ? NUM_SUFFIX_I : NUM_SUFFIX_ALL);
         if (suffix & NUM_SUFFIX_R) {
             type = tRATIONAL;
-            v = parse_rational(p, tok(p), toklen(p), seen_point);
         }
         else {
-            double d = strtod(tok(p), 0);
+            strtod(tok(p), 0);
             if (errno == ERANGE) {
                 rb_warning1("Float %s out of range", WARN_S(tok(p)));
                 errno = 0;
             }
-            v = DBL2NUM(d);
         }
-        return set_number_literal(p, v, type, suffix);
+        return set_number_literal(p, type, suffix, 0, seen_point);
     }
     suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-    return set_integer_literal(p, rb_cstr_to_inum(tok(p), 10, FALSE), suffix);
+    return set_number_literal(p, tINTEGER, suffix, 10, 0);
 }
 
 static enum yytokentype
@@ -10617,6 +10626,16 @@ node_newnode(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, V
 {
     NODE *n = node_new_internal(p, type, a0, a1, a2);
 
+    nd_set_loc(n, loc);
+    nd_set_node_id(n, parser_get_node_id(p));
+    return n;
+}
+
+static NODE*
+node_new_literal_node(struct parser_params *p, enum node_type type, rb_literal_t *literal, const rb_code_location_t *loc)
+{
+    NODE *n = rb_ast_newnode(p->ast, type);
+    rb_node_init_with_literal(n, type, literal);
     nd_set_loc(n, loc);
     nd_set_node_id(n, parser_get_node_id(p));
     return n;
@@ -12616,42 +12635,19 @@ new_yield(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     return NEW_YIELD(node, loc);
 }
 
-static VALUE
-negate_lit(struct parser_params *p, VALUE lit)
+static void
+negate_lit(struct parser_params *p, NODE *node)
 {
-    if (FIXNUM_P(lit)) {
-        return LONG2FIX(-FIX2LONG(lit));
+    node->literal->numeric_literal_info.tminus = TRUE;
+    VALUE lit = node->u1.value;
+    if (node->literal->type == integer_literal) {
+        lit = rb_compile_integer_literal(node->literal);
+    } else if (node->literal->type == float_literal) {
+        lit = rb_compile_float_literal(node->literal);
+    } else if (node->literal->type == rational_literal) {
+        lit = rb_compile_rational_literal(node->literal);
     }
-    if (SPECIAL_CONST_P(lit)) {
-#if USE_FLONUM
-        if (FLONUM_P(lit)) {
-            return DBL2NUM(-RFLOAT_VALUE(lit));
-        }
-#endif
-        goto unknown;
-    }
-    switch (BUILTIN_TYPE(lit)) {
-      case T_BIGNUM:
-        bignum_negate(lit);
-        lit = rb_big_norm(lit);
-        break;
-      case T_RATIONAL:
-        rational_set_num(lit, negate_lit(p, rational_get_num(lit)));
-        break;
-      case T_COMPLEX:
-        rcomplex_set_real(lit, negate_lit(p, rcomplex_get_real(lit)));
-        rcomplex_set_imag(lit, negate_lit(p, rcomplex_get_imag(lit)));
-        break;
-      case T_FLOAT:
-        lit = DBL2NUM(-RFLOAT_VALUE(lit));
-        break;
-      unknown:
-      default:
-        rb_parser_fatal(p, "unknown literal type (%s) passed to negate_lit",
-                        rb_builtin_class_name(lit));
-        break;
-    }
-    return lit;
+    RB_OBJ_WRITE(p->ast, &node->nd_lit, lit);
 }
 
 static NODE *

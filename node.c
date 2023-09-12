@@ -47,6 +47,20 @@
 typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE * node);
 static void iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, void *ctx);
 
+static VALUE
+node_numeric_literal_gen(rb_literal_t *literal)
+{
+    VALUE lit = 0;
+    if (literal->type == integer_literal) {
+        lit = rb_compile_integer_literal(literal);
+    } else if (literal->type == float_literal) {
+        lit = rb_compile_float_literal(literal);
+    } else if (literal->type == rational_literal) {
+        lit = rb_compile_rational_literal(literal);
+    }
+    return lit;
+}
+
 /* Setup NODE structure.
  * NODE is not an object managed by GC, but it imitates an object
  * so that it can work with `RB_TYPE_P(obj, T_NODE)`.
@@ -58,9 +72,29 @@ rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
     n->flags = T_NODE;
     nd_init_type(n, type);
+    rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+    literal->val = NULL;
+    literal->type = none_literal;
+    n->literal = literal;
     n->u1.value = a0;
     n->u2.value = a1;
     n->u3.value = a2;
+    n->nd_loc.beg_pos.lineno = 0;
+    n->nd_loc.beg_pos.column = 0;
+    n->nd_loc.end_pos.lineno = 0;
+    n->nd_loc.end_pos.column = 0;
+    n->node_id = -1;
+}
+
+void
+rb_node_init_with_literal(NODE *n, enum node_type type, rb_literal_t *literal)
+{
+    n->flags = T_NODE;
+    nd_init_type(n, type);
+    n->literal = literal;
+    n->u1.value = node_numeric_literal_gen(literal);
+    n->u2.value = 0;
+    n->u3.value = 0;
     n->nd_loc.beg_pos.lineno = 0;
     n->nd_loc.beg_pos.column = 0;
     n->nd_loc.end_pos.lineno = 0;

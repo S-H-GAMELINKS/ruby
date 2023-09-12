@@ -60,6 +60,7 @@ void rb_ast_node_type_change(NODE *n, enum node_type type);
 #endif
 const char *ruby_node_name(int node);
 void rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
+void rb_node_init_with_literal(NODE *n, enum node_type type, rb_literal_t *literal);
 
 void rb_ast_mark(rb_ast_t*);
 void rb_ast_update_references(rb_ast_t*);
@@ -121,5 +122,9 @@ nd_type_p(const NODE *n, enum node_type t)
 {
     return (enum node_type)nd_type(n) == t;
 }
+
+VALUE rb_compile_integer_literal(rb_literal_t *literal);
+VALUE rb_compile_float_literal(rb_literal_t *literal);
+VALUE rb_compile_rational_literal(rb_literal_t *literal);
 
 #endif /* RUBY_NODE_H */

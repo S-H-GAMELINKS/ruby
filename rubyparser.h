@@ -230,8 +230,29 @@ typedef struct rb_code_location_struct {
     rb_code_position_t end_pos;
 } rb_code_location_t;
 
+enum rb_literal_type {
+    none_literal,
+    integer_literal,
+    float_literal,
+    rational_literal
+};
+
+typedef struct rb_numeric_literal_info {
+    int tminus;
+    int base;
+    int seen_point;
+    int is_imaginary;
+} rb_numeric_literal_info_t;
+
+typedef struct rb_literal_struct {
+    char *val;
+    enum rb_literal_type type;
+    rb_numeric_literal_info_t numeric_literal_info;
+} rb_literal_t;
+
 typedef struct RNode {
     VALUE flags;
+    rb_literal_t *literal;
     union {
         struct RNode *node;
         ID id;

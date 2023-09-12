@@ -45,6 +45,48 @@
 #include "insns_info.inc"
 #include "yarp/yarp.h"
 
+static void
+bignum_negate(VALUE b)
+{
+    BIGNUM_NEGATE(b);
+}
+
+static void
+rational_set_num(VALUE r, VALUE n)
+{
+    RATIONAL_SET_NUM(r, n);
+}
+
+static VALUE
+rational_get_num(VALUE obj)
+{
+    return RRATIONAL(obj)->num;
+}
+
+static void
+rcomplex_set_real(VALUE cmp, VALUE r)
+{
+    RCOMPLEX_SET_REAL(cmp, r);
+}
+
+static VALUE
+rcomplex_get_real(VALUE obj)
+{
+    return RCOMPLEX(obj)->real;
+}
+
+static void
+rcomplex_set_imag(VALUE cmp, VALUE i)
+{
+    RCOMPLEX_SET_IMAG(cmp, i);
+}
+
+static VALUE
+rcomplex_get_imag(VALUE obj)
+{
+    return RCOMPLEX(obj)->imag;
+}
+
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
 
@@ -9387,6 +9429,89 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     return COMPILE_OK;
 }
 
+static VALUE
+compile_negative_numeric(VALUE val)
+{
+    if (FIXNUM_P(val)) {
+        return LONG2FIX(-FIX2LONG(val));
+    }
+    if (SPECIAL_CONST_P(val)) {
+#if USE_FLONUM
+        if (FLONUM_P(val)) {
+            return DBL2NUM(-RFLOAT_VALUE(val));
+        }
+#endif
+    }
+    switch (OBJ_BUILTIN_TYPE(val))
+    {
+    case T_BIGNUM:
+        bignum_negate(val);
+        val = rb_big_norm(val);
+        break;
+    case T_RATIONAL:
+        rational_set_num(val, compile_negative_numeric(rational_get_num(val)));
+        break;
+    case T_COMPLEX:
+        rcomplex_set_real(val, compile_negative_numeric(rcomplex_get_real(val)));
+        rcomplex_set_imag(val, compile_negative_numeric(rcomplex_get_imag(val)));
+        break;
+    case T_FLOAT:
+        val = DBL2NUM(-RFLOAT_VALUE(val));
+        break;
+    default:
+        val = LONG2FIX(-FIX2LONG(val));
+        break;
+    }
+    return val;
+}
+
+static VALUE
+compile_numeric_literal(rb_literal_t *literal, VALUE val)
+{
+    if (literal->numeric_literal_info.tminus) {
+        val = compile_negative_numeric(val);
+    }
+    if (literal->numeric_literal_info.is_imaginary) {
+        val = rb_complex_raw(INT2FIX(0), val);
+    }
+    return val;
+}
+
+VALUE
+rb_compile_integer_literal(rb_literal_t *literal)
+{
+    VALUE lit = rb_cstr_to_inum(literal->val, literal->numeric_literal_info.base, FALSE);
+    return compile_numeric_literal(literal, lit);
+}
+
+VALUE
+rb_compile_float_literal(rb_literal_t *literal)
+{
+    double d = strtod(literal->val, 0);
+    VALUE lit = DBL2NUM(d);
+    return compile_numeric_literal(literal, lit);
+}
+
+VALUE
+rb_compile_rational_literal(rb_literal_t *literal)
+{
+    VALUE lit;
+    char *val = strdup(literal->val);
+    int base = literal->numeric_literal_info.base;
+    if (literal->numeric_literal_info.seen_point > 0) {
+        int len = (int)(strlen(val));
+        int seen_point = literal->numeric_literal_info.seen_point;
+        char *point = &val[seen_point];
+        size_t fraclen = len-seen_point-1;
+        memmove(point, point+1, fraclen+1);
+
+        lit = rb_rational_new(rb_cstr_to_inum(val, base, FALSE), rb_int_positive_pow(10, fraclen));
+    } else {
+        lit = rb_rational_raw1(rb_cstr_to_inum(literal->val, base, FALSE));
+    }
+    return compile_numeric_literal(literal, lit);
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9752,10 +9877,20 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_match(iseq, ret, node, popped, type));
         break;
       case NODE_LIT:{
-        debugp_param("lit", node->nd_lit);
+        VALUE lit = node->nd_lit;
+        debugp_param("lit", lit);
         if (!popped) {
-            ADD_INSN1(ret, node, putobject, node->nd_lit);
-            RB_OBJ_WRITTEN(iseq, Qundef, node->nd_lit);
+            if (node->literal != NULL) {
+                if (node->literal->type == integer_literal) {
+                    lit = rb_compile_integer_literal(node->literal);
+                } else if (node->literal->type == float_literal) {
+                    lit = rb_compile_float_literal(node->literal);
+                } else if (node->literal->type == rational_literal) {
+                    lit = rb_compile_rational_literal(node->literal);
+                }
+            }
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
         }
         break;
       }
