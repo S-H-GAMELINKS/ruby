@@ -983,7 +983,6 @@ static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
 
-static void negate_lit(struct parser_params*, NODE*);
 static NODE *ret_args(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,NODE*);
 static NODE *new_yield(struct parser_params*,NODE*,const YYLTYPE*);
@@ -5495,7 +5494,8 @@ numeric 	: simple_numeric
                     {
                     /*%%%*/
                         $$ = $2;
-                        negate_lit(p, $$);
+                        $$->literal->numeric_literal_info.tminus = TRUE;
+                        RB_OBJ_WRITE(p->ast, &$$->nd_lit, rb_compile_numeric_literal($$->literal));
                     /*% %*/
                     /*% ripper: unary!(ID2VAL(idUMinus), $2) %*/
                     }
@@ -12633,21 +12633,6 @@ new_yield(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     if (node) no_blockarg(p, node);
 
     return NEW_YIELD(node, loc);
-}
-
-static void
-negate_lit(struct parser_params *p, NODE *node)
-{
-    node->literal->numeric_literal_info.tminus = TRUE;
-    VALUE lit = node->u1.value;
-    if (node->literal->type == integer_literal) {
-        lit = rb_compile_integer_literal(node->literal);
-    } else if (node->literal->type == float_literal) {
-        lit = rb_compile_float_literal(node->literal);
-    } else if (node->literal->type == rational_literal) {
-        lit = rb_compile_rational_literal(node->literal);
-    }
-    RB_OBJ_WRITE(p->ast, &node->nd_lit, lit);
 }
 
 static NODE *

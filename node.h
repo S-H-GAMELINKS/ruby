@@ -123,8 +123,6 @@ nd_type_p(const NODE *n, enum node_type t)
     return (enum node_type)nd_type(n) == t;
 }
 
-VALUE rb_compile_integer_literal(rb_literal_t *literal);
-VALUE rb_compile_float_literal(rb_literal_t *literal);
-VALUE rb_compile_rational_literal(rb_literal_t *literal);
+VALUE rb_compile_numeric_literal(rb_literal_t *literal);
 
 #endif /* RUBY_NODE_H */

@@ -9477,14 +9477,14 @@ compile_numeric_literal(rb_literal_t *literal, VALUE val)
     return val;
 }
 
-VALUE
+static VALUE
 rb_compile_integer_literal(rb_literal_t *literal)
 {
     VALUE lit = rb_cstr_to_inum(literal->val, literal->numeric_literal_info.base, FALSE);
     return compile_numeric_literal(literal, lit);
 }
 
-VALUE
+static VALUE
 rb_compile_float_literal(rb_literal_t *literal)
 {
     double d = strtod(literal->val, 0);
@@ -9492,7 +9492,7 @@ rb_compile_float_literal(rb_literal_t *literal)
     return compile_numeric_literal(literal, lit);
 }
 
-VALUE
+static VALUE
 rb_compile_rational_literal(rb_literal_t *literal)
 {
     VALUE lit;
@@ -9510,6 +9510,19 @@ rb_compile_rational_literal(rb_literal_t *literal)
         lit = rb_rational_raw1(rb_cstr_to_inum(literal->val, base, FALSE));
     }
     return compile_numeric_literal(literal, lit);
+}
+
+VALUE
+rb_compile_numeric_literal(rb_literal_t *literal)
+{
+    if (literal->type == integer_literal) {
+        return rb_compile_integer_literal(literal);
+    } else if (literal->type == float_literal) {
+        return rb_compile_float_literal(literal);
+    } else if (literal->type == rational_literal) {
+        return rb_compile_rational_literal(literal);
+    }
+    return 0;
 }
 
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
@@ -9881,13 +9894,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         debugp_param("lit", lit);
         if (!popped) {
             if (node->literal != NULL) {
-                if (node->literal->type == integer_literal) {
-                    lit = rb_compile_integer_literal(node->literal);
-                } else if (node->literal->type == float_literal) {
-                    lit = rb_compile_float_literal(node->literal);
-                } else if (node->literal->type == rational_literal) {
-                    lit = rb_compile_rational_literal(node->literal);
-                }
+                lit = rb_compile_numeric_literal(node->literal);
             }
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
