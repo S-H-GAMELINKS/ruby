@@ -45,48 +45,6 @@
 #include "insns_info.inc"
 #include "yarp/yarp.h"
 
-static void
-bignum_negate(VALUE b)
-{
-    BIGNUM_NEGATE(b);
-}
-
-static void
-rational_set_num(VALUE r, VALUE n)
-{
-    RATIONAL_SET_NUM(r, n);
-}
-
-static VALUE
-rational_get_num(VALUE obj)
-{
-    return RRATIONAL(obj)->num;
-}
-
-static void
-rcomplex_set_real(VALUE cmp, VALUE r)
-{
-    RCOMPLEX_SET_REAL(cmp, r);
-}
-
-static VALUE
-rcomplex_get_real(VALUE obj)
-{
-    return RCOMPLEX(obj)->real;
-}
-
-static void
-rcomplex_set_imag(VALUE cmp, VALUE i)
-{
-    RCOMPLEX_SET_IMAG(cmp, i);
-}
-
-static VALUE
-rcomplex_get_imag(VALUE obj)
-{
-    return RCOMPLEX(obj)->imag;
-}
-
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
 
@@ -9445,15 +9403,15 @@ compile_negative_numeric(VALUE val)
     switch (OBJ_BUILTIN_TYPE(val))
     {
     case T_BIGNUM:
-        bignum_negate(val);
+        BIGNUM_NEGATE(val);
         val = rb_big_norm(val);
         break;
     case T_RATIONAL:
-        rational_set_num(val, compile_negative_numeric(rational_get_num(val)));
+        RATIONAL_SET_NUM(val, compile_negative_numeric(RRATIONAL(val)->num));
         break;
     case T_COMPLEX:
-        rcomplex_set_real(val, compile_negative_numeric(rcomplex_get_real(val)));
-        rcomplex_set_imag(val, compile_negative_numeric(rcomplex_get_imag(val)));
+        RCOMPLEX_SET_REAL(val, compile_negative_numeric(RCOMPLEX(val)->real));
+        RCOMPLEX_SET_IMAG(val, compile_negative_numeric(RCOMPLEX(val)->imag));
         break;
     case T_FLOAT:
         val = DBL2NUM(-RFLOAT_VALUE(val));
