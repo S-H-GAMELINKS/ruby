@@ -231,7 +231,6 @@ typedef struct rb_code_location_struct {
 } rb_code_location_t;
 
 enum rb_literal_type {
-    none_literal,
     integer_literal,
     float_literal,
     rational_literal
