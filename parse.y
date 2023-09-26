@@ -82,6 +82,7 @@ struct lex_context;
 #include "ruby/ractor.h"
 #include "symbol.h"
 
+#ifndef RIPPER
 static bool
 hash_literal_key_p(VALUE k)
 {
