@@ -47,20 +47,6 @@
 typedef void node_itr_t(rb_ast_t *ast, void *ctx, NODE * node);
 static void iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, void *ctx);
 
-static VALUE
-node_numeric_literal_gen(rb_literal_t *literal)
-{
-    VALUE lit = 0;
-    if (literal->type == integer_literal) {
-        lit = rb_compile_integer_literal(literal);
-    } else if (literal->type == float_literal) {
-        lit = rb_compile_float_literal(literal);
-    } else if (literal->type == rational_literal) {
-        lit = rb_compile_rational_literal(literal);
-    }
-    return lit;
-}
-
 /* Setup NODE structure.
  * NODE is not an object managed by GC, but it imitates an object
  * so that it can work with `RB_TYPE_P(obj, T_NODE)`.
