@@ -9390,6 +9390,102 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     return COMPILE_OK;
 }
 
+static VALUE
+compile_negative_numeric(VALUE val)
+{
+    if (FIXNUM_P(val)) {
+        return LONG2FIX(-FIX2LONG(val));
+    }
+    if (SPECIAL_CONST_P(val)) {
+#if USE_FLONUM
+        if (FLONUM_P(val)) {
+            return DBL2NUM(-RFLOAT_VALUE(val));
+        }
+#endif
+    }
+    switch (OBJ_BUILTIN_TYPE(val))
+    {
+    case T_BIGNUM:
+        BIGNUM_NEGATE(val);
+        val = rb_big_norm(val);
+        break;
+    case T_RATIONAL:
+        RATIONAL_SET_NUM(val, compile_negative_numeric(RRATIONAL(val)->num));
+        break;
+    case T_COMPLEX:
+        RCOMPLEX_SET_REAL(val, compile_negative_numeric(RCOMPLEX(val)->real));
+        RCOMPLEX_SET_IMAG(val, compile_negative_numeric(RCOMPLEX(val)->imag));
+        break;
+    case T_FLOAT:
+        val = DBL2NUM(-RFLOAT_VALUE(val));
+        break;
+    default:
+        val = LONG2FIX(-FIX2LONG(val));
+        break;
+    }
+    return val;
+}
+
+static VALUE
+compile_numeric_literal(rb_literal_t *literal, VALUE val)
+{
+    if (literal->numeric_literal_info.tminus) {
+        val = compile_negative_numeric(val);
+    }
+    if (literal->numeric_literal_info.is_imaginary) {
+        val = rb_complex_raw(INT2FIX(0), val);
+    }
+    return val;
+}
+
+static VALUE
+rb_compile_integer_literal(rb_literal_t *literal)
+{
+    VALUE lit = rb_cstr_to_inum(literal->val, literal->numeric_literal_info.base, FALSE);
+    return compile_numeric_literal(literal, lit);
+}
+
+static VALUE
+rb_compile_float_literal(rb_literal_t *literal)
+{
+    double d = strtod(literal->val, 0);
+    VALUE lit = DBL2NUM(d);
+    return compile_numeric_literal(literal, lit);
+}
+
+static VALUE
+rb_compile_rational_literal(rb_literal_t *literal)
+{
+    VALUE lit;
+    char *val = strdup(literal->val);
+    int base = literal->numeric_literal_info.base;
+    if (literal->numeric_literal_info.seen_point > 0) {
+        int len = (int)(strlen(val));
+        int seen_point = literal->numeric_literal_info.seen_point;
+        char *point = &val[seen_point];
+        size_t fraclen = len-seen_point-1;
+        memmove(point, point+1, fraclen+1);
+
+        lit = rb_rational_new(rb_cstr_to_inum(val, base, FALSE), rb_int_positive_pow(10, fraclen));
+    } else {
+        lit = rb_rational_raw1(rb_cstr_to_inum(literal->val, base, FALSE));
+    }
+    return compile_numeric_literal(literal, lit);
+}
+
+VALUE
+rb_compile_numeric_literal(rb_literal_t *literal)
+{
+    if (literal->type == integer_literal) {
+        return rb_compile_integer_literal(literal);
+    } else if (literal->type == float_literal) {
+        return rb_compile_float_literal(literal);
+    } else if (literal->type == rational_literal) {
+        return rb_compile_rational_literal(literal);
+    }
+    return 0;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9755,10 +9851,16 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_match(iseq, ret, node, popped, type));
         break;
       case NODE_LIT:{
-        debugp_param("lit", RNODE_LIT(node)->nd_lit);
+        VALUE lit = RNODE_LIT(node)->nd_lit;
+        debugp_param("lit", lit);
         if (!popped) {
-            ADD_INSN1(ret, node, putobject, RNODE_LIT(node)->nd_lit);
-            RB_OBJ_WRITTEN(iseq, Qundef, RNODE_LIT(node)->nd_lit);
+            if (RB_TYPE_P(lit, T_REGEXP) || RB_TYPE_P(lit, T_STRING) || SYMBOL_P(lit)) {
+                // nothing to do.
+            } else if (RNODE_LIT(node)->literal != NULL) {
+                lit = rb_compile_numeric_literal(RNODE_LIT(node)->literal);
+            }
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
         }
         break;
       }

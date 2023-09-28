@@ -165,6 +165,25 @@ typedef struct rb_code_location_struct {
     rb_code_position_t end_pos;
 } rb_code_location_t;
 
+enum rb_literal_type {
+    integer_literal,
+    float_literal,
+    rational_literal
+};
+
+typedef struct rb_numeric_literal_info {
+    int tminus;
+    int base;
+    int seen_point;
+    int is_imaginary;
+} rb_numeric_literal_info_t;
+
+typedef struct rb_literal_struct {
+    char *val;
+    enum rb_literal_type type;
+    rb_numeric_literal_info_t numeric_literal_info;
+} rb_literal_t;
+
 /* Header part of AST Node */
 typedef struct RNode {
     VALUE flags;
@@ -690,6 +709,7 @@ typedef struct RNode_LIT {
     VALUE nd_lit;
     VALUE not_used;
     VALUE not_used2;
+    rb_literal_t *literal;
 } rb_node_lit_t;
 
 typedef struct RNode_STR {

@@ -83,48 +83,6 @@ struct lex_context;
 #include "symbol.h"
 
 #ifndef RIPPER
-static void
-bignum_negate(VALUE b)
-{
-    BIGNUM_NEGATE(b);
-}
-
-static void
-rational_set_num(VALUE r, VALUE n)
-{
-    RATIONAL_SET_NUM(r, n);
-}
-
-static VALUE
-rational_get_num(VALUE obj)
-{
-    return RRATIONAL(obj)->num;
-}
-
-static void
-rcomplex_set_real(VALUE cmp, VALUE r)
-{
-    RCOMPLEX_SET_REAL(cmp, r);
-}
-
-static VALUE
-rcomplex_get_real(VALUE obj)
-{
-    return RCOMPLEX(obj)->real;
-}
-
-static void
-rcomplex_set_imag(VALUE cmp, VALUE i)
-{
-    RCOMPLEX_SET_IMAG(cmp, i);
-}
-
-static VALUE
-rcomplex_get_imag(VALUE obj)
-{
-    return RCOMPLEX(obj)->imag;
-}
-
 static bool
 hash_literal_key_p(VALUE k)
 {
@@ -942,7 +900,7 @@ static rb_node_nth_ref_t *rb_node_nth_ref_new(struct parser_params *p, long nd_n
 static rb_node_back_ref_t *rb_node_back_ref_new(struct parser_params *p, long nd_nth, const YYLTYPE *loc);
 static rb_node_match2_t *rb_node_match2_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_match3_t *rb_node_match3_new(struct parser_params *p, NODE *nd_recv, NODE *nd_value, const YYLTYPE *loc);
-static rb_node_lit_t *rb_node_lit_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc);
+static rb_node_lit_t *rb_node_lit_new(struct parser_params *p, VALUE nd_lit, rb_literal_t *literal, const YYLTYPE *loc);
 static rb_node_str_t *rb_node_str_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc);
 static rb_node_dstr_t *rb_node_dstr_new0(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_dstr_t *rb_node_dstr_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc);
@@ -1044,7 +1002,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_BACK_REF(n,loc) (NODE *)rb_node_back_ref_new(p,n,loc)
 #define NEW_MATCH2(n1,n2,loc) (NODE *)rb_node_match2_new(p,n1,n2,loc)
 #define NEW_MATCH3(r,n2,loc) (NODE *)rb_node_match3_new(p,r,n2,loc)
-#define NEW_LIT(l,loc) (NODE *)rb_node_lit_new(p,l,loc)
+#define NEW_LIT(l,literal,loc) (NODE *)rb_node_lit_new(p,l,literal,loc)
 #define NEW_STR(s,loc) (NODE *)rb_node_str_new(p,s,loc)
 #define NEW_DSTR0(s,l,n,loc) (NODE *)rb_node_dstr_new0(p,s,l,n,loc)
 #define NEW_DSTR(s,loc) (NODE *)rb_node_dstr_new(p,s,loc)
@@ -1207,7 +1165,6 @@ static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
 
-static VALUE negate_lit(struct parser_params*, VALUE);
 static NODE *ret_args(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,NODE*);
 static NODE *new_yield(struct parser_params*,NODE*,const YYLTYPE*);
@@ -3048,7 +3005,7 @@ fname		: tIDENTIFIER
 fitem		: fname
                     {
                     /*%%%*/
-                        $$ = NEW_LIT(ID2SYM($1), &@$);
+                        $$ = NEW_LIT(ID2SYM($1), NULL, &@$);
                     /*% %*/
                     /*% ripper: symbol_literal!($1) %*/
                     }
@@ -5250,7 +5207,7 @@ p_kw		: p_kw_label p_expr
                     {
                         error_duplicate_pattern_key(p, get_id($1), &@1);
                     /*%%%*/
-                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), $2);
+                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), NULL, &@1), &@$), $2);
                     /*% %*/
                     /*% ripper: rb_ary_new_from_args(2, get_value($1), get_value($2)) %*/
                     }
@@ -5262,7 +5219,7 @@ p_kw		: p_kw_label p_expr
                         }
                         error_duplicate_pattern_variable(p, get_id($1), &@1);
                     /*%%%*/
-                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), assignable(p, $1, 0, &@$));
+                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), NULL, &@$), &@$), assignable(p, $1, 0, &@$));
                     /*% %*/
                     /*% ripper: rb_ary_new_from_args(2, get_value(assignable(p, $1)), Qnil) %*/
                     }
@@ -5854,7 +5811,7 @@ ssym		: tSYMBEG sym
                     {
                         SET_LEX_STATE(EXPR_END);
                     /*%%%*/
-                        $$ = NEW_LIT(ID2SYM($2), &@$);
+                        $$ = NEW_LIT(ID2SYM($2), NULL, &@$);
                     /*% %*/
                     /*% ripper: symbol_literal!(symbol!($2)) %*/
                     }
@@ -5879,7 +5836,8 @@ numeric 	: simple_numeric
                     {
                     /*%%%*/
                         $$ = $2;
-                        RB_OBJ_WRITE(p->ast, &RNODE_LIT($$)->nd_lit, negate_lit(p, RNODE_LIT($$)->nd_lit));
+                        RNODE_LIT($$)->literal->numeric_literal_info.tminus = TRUE;
+                        RB_OBJ_WRITE(p->ast, &RNODE_LIT($$)->nd_lit, rb_compile_numeric_literal(RNODE_LIT($$)->literal));
                     /*% %*/
                     /*% ripper: unary!(ID2VAL(idUMinus), $2) %*/
                     }
@@ -6519,7 +6477,7 @@ assoc		: arg_value tASSOC arg_value
                 | tLABEL arg_value
                     {
                     /*%%%*/
-                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), $2);
+                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), NULL, &@1), &@$), $2);
                     /*% %*/
                     /*% ripper: assoc_new!($1, $2) %*/
                     }
@@ -6528,7 +6486,7 @@ assoc		: arg_value tASSOC arg_value
                     /*%%%*/
                         NODE *val = gettable(p, $1, &@$);
                         if (!val) val = NEW_BEGIN(0, &@$);
-                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), val);
+                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), NULL, &@1), &@$), val);
                     /*% %*/
                     /*% ripper: assoc_new!($1, Qnil) %*/
                     }
@@ -6550,7 +6508,7 @@ assoc		: arg_value tASSOC arg_value
                                 empty_hash = rb_obj_freeze(rb_hash_new());
                                 rb_gc_register_mark_object(empty_hash);
                             }
-                            $$ = list_append(p, NEW_LIST(0, &@$), NEW_LIT(empty_hash, &@$));
+                            $$ = list_append(p, NEW_LIST(0, &@$), NEW_LIT(empty_hash, NULL, &@$));
                         }
                         else
                             $$ = list_append(p, NEW_LIST(0, &@$), $2);
@@ -6658,9 +6616,9 @@ do { \
   set_yylval_node(NEW_STR(x, &_cur_loc)); \
   RB_OBJ_WRITTEN(p->ast, Qnil, x); \
 } while(0)
-# define set_yylval_literal(x) \
+# define set_yylval_literal(x, literal) \
 do { \
-  set_yylval_node(NEW_LIT(x, &_cur_loc)); \
+  set_yylval_node(NEW_LIT(0, literal, &_cur_loc)); \
   RB_OBJ_WRITTEN(p->ast, Qnil, x); \
 } while(0)
 # define set_yylval_num(x) (yylval.num = (x))
@@ -6677,7 +6635,7 @@ ripper_yylval_id(struct parser_params *p, ID x)
 # define set_yylval_num(x) (yylval.val = ripper_new_yylval(p, (x), 0, 0))
 # define set_yylval_id(x)  (void)(x)
 # define set_yylval_name(x) (void)(yylval.val = ripper_yylval_id(p, x))
-# define set_yylval_literal(x) add_mark_object(p, (x))
+# define set_yylval_literal(x, literal) add_mark_object(p, (x))
 # define set_yylval_node(x) (yylval.val = ripper_new_yylval(p, 0, 0, STR_NEW(p->lex.ptok, p->lex.pcur-p->lex.ptok)))
 # define yylval_id() yylval.id
 # define _cur_loc NULL_LOC /* dummy */
@@ -8751,27 +8709,37 @@ number_literal_suffix(struct parser_params *p, int mask)
 }
 
 static enum yytokentype
-set_number_literal(struct parser_params *p, VALUE v,
-                   enum yytokentype type, int suffix)
+set_number_literal(struct parser_params *p, enum yytokentype type, int suffix, int base, int seen_point)
 {
-    if (suffix & NUM_SUFFIX_I) {
-        v = rb_complex_raw(INT2FIX(0), v);
-        type = tIMAGINARY;
-    }
-    set_yylval_literal(v);
-    SET_LEX_STATE(EXPR_END);
-    return type;
-}
-
-static enum yytokentype
-set_integer_literal(struct parser_params *p, VALUE v, int suffix)
-{
-    enum yytokentype type = tINTEGER;
     if (suffix & NUM_SUFFIX_R) {
-        v = rb_rational_raw1(v);
         type = tRATIONAL;
     }
-    return set_number_literal(p, v, type, suffix);
+
+    rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+    literal->val = strdup(tok(p));
+    literal->numeric_literal_info.tminus = FALSE;
+    literal->numeric_literal_info.base = base;
+    literal->numeric_literal_info.seen_point = seen_point;
+    literal->numeric_literal_info.is_imaginary = FALSE;
+
+    if (type == tINTEGER) {
+        literal->type = integer_literal;
+    }
+    else if (type == tFLOAT) {
+        literal->type = float_literal;
+    }
+    else if (type == tRATIONAL) {
+        literal->type = rational_literal;
+    }
+
+    if (suffix & NUM_SUFFIX_I) {
+        type = tIMAGINARY;
+        literal->numeric_literal_info.is_imaginary = TRUE;
+    }
+
+    set_yylval_literal(0, literal);
+    SET_LEX_STATE(EXPR_END);
+    return type;
 }
 
 #ifdef RIPPER
@@ -9453,24 +9421,13 @@ parser_prepare(struct parser_params *p)
      (ambiguous_operator(tok, op, syn), 0)), \
      (enum yytokentype)(tok))
 
-static VALUE
-parse_rational(struct parser_params *p, char *str, int len, int seen_point)
-{
-    VALUE v;
-    char *point = &str[seen_point];
-    size_t fraclen = len-seen_point-1;
-    memmove(point, point+1, fraclen+1);
-    v = rb_cstr_to_inum(str, 10, FALSE);
-    return rb_rational_new(v, rb_int_positive_pow(10, fraclen));
-}
-
 static enum yytokentype
 no_digits(struct parser_params *p)
 {
     yyerror0("numeric literal without digits");
     if (peek(p, '_')) nextc(p);
     /* dummy 0, for tUMINUS_NUM at numeric */
-    return set_integer_literal(p, INT2FIX(0), 0);
+    return set_number_literal(p, tINTEGER, 0, 10, 0);
 }
 
 static enum yytokentype
@@ -9511,7 +9468,7 @@ parse_numeric(struct parser_params *p, int c)
             }
             else if (nondigit) goto trailing_uc;
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, rb_cstr_to_inum(tok(p), 16, FALSE), suffix);
+            return set_number_literal(p, tINTEGER, suffix, 16, 0);
         }
         if (c == 'b' || c == 'B') {
             /* binary */
@@ -9535,7 +9492,7 @@ parse_numeric(struct parser_params *p, int c)
             }
             else if (nondigit) goto trailing_uc;
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, rb_cstr_to_inum(tok(p), 2, FALSE), suffix);
+            return set_number_literal(p, tINTEGER, suffix, 2, 0);
         }
         if (c == 'd' || c == 'D') {
             /* decimal */
@@ -9559,7 +9516,7 @@ parse_numeric(struct parser_params *p, int c)
             }
             else if (nondigit) goto trailing_uc;
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, rb_cstr_to_inum(tok(p), 10, FALSE), suffix);
+            return set_number_literal(p, tINTEGER, suffix, 10, 0);
         }
         if (c == '_') {
             /* 0_0 */
@@ -9591,7 +9548,7 @@ parse_numeric(struct parser_params *p, int c)
                 tokfix(p);
                 if (nondigit) goto trailing_uc;
                 suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-                return set_integer_literal(p, rb_cstr_to_inum(tok(p), 8, FALSE), suffix);
+                return set_number_literal(p, tINTEGER, suffix, 8, 0);
             }
             if (nondigit) {
                 pushback(p, c);
@@ -9607,8 +9564,9 @@ parse_numeric(struct parser_params *p, int c)
         }
         else {
             pushback(p, c);
+            tokfix(p);
             suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-            return set_integer_literal(p, INT2FIX(0), suffix);
+            return set_number_literal(p, tINTEGER, suffix, 10, 0);
         }
     }
 
@@ -9688,25 +9646,22 @@ parse_numeric(struct parser_params *p, int c)
     tokfix(p);
     if (is_float) {
         enum yytokentype type = tFLOAT;
-        VALUE v;
 
         suffix = number_literal_suffix(p, seen_e ? NUM_SUFFIX_I : NUM_SUFFIX_ALL);
         if (suffix & NUM_SUFFIX_R) {
             type = tRATIONAL;
-            v = parse_rational(p, tok(p), toklen(p), seen_point);
         }
         else {
-            double d = strtod(tok(p), 0);
+            strtod(tok(p), 0);
             if (errno == ERANGE) {
                 rb_warning1("Float %s out of range", WARN_S(tok(p)));
                 errno = 0;
             }
-            v = DBL2NUM(d);
         }
-        return set_number_literal(p, v, type, suffix);
+        return set_number_literal(p, type, suffix, 0, seen_point);
     }
     suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
-    return set_integer_literal(p, rb_cstr_to_inum(tok(p), 10, FALSE), suffix);
+    return set_number_literal(p, tINTEGER, suffix, 10, 0);
 }
 
 static enum yytokentype
@@ -11749,12 +11704,17 @@ rb_node_back_ref_new(struct parser_params *p, long nd_nth, const YYLTYPE *loc)
 }
 
 static rb_node_lit_t *
-rb_node_lit_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc)
+rb_node_lit_new(struct parser_params *p, VALUE nd_lit, rb_literal_t *literal, const YYLTYPE *loc)
 {
     rb_node_lit_t *n = NODE_NEWNODE(NODE_LIT, rb_node_lit_t, loc);
-    n->nd_lit = nd_lit;
+    if (literal != NULL) {
+        n->nd_lit = rb_compile_numeric_literal(literal);
+    } else {
+        n->nd_lit = nd_lit;
+    }
     n->not_used = 0;
     n->not_used2 = 0;
+    n->literal = literal;
 
     return n;
 }
@@ -12678,9 +12638,9 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         }
         return node;
       case keyword__LINE__:
-        return NEW_LIT(INT2FIX(p->tokline), loc);
+        return NEW_LIT(INT2FIX(p->tokline), NULL, loc);
       case keyword__ENCODING__:
-        node = NEW_LIT(rb_enc_from_encoding(p->enc), loc);
+        node = NEW_LIT(rb_enc_from_encoding(p->enc), NULL, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
         return node;
 
@@ -12790,7 +12750,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
     VALUE lit;
 
     if (!node) {
-        node = NEW_LIT(reg_compile(p, STR_NEW0(), options), loc);
+        node = NEW_LIT(reg_compile(p, STR_NEW0(), options), NULL, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
         return node;
     }
@@ -13462,7 +13422,7 @@ const_decl_path(struct parser_params *p, NODE **dest)
             path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
             path = rb_fstring(path);
         }
-        *dest = n = NEW_LIT(path, loc);
+        *dest = n = NEW_LIT(path, NULL, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
     }
     return n;
@@ -13471,7 +13431,7 @@ const_decl_path(struct parser_params *p, NODE **dest)
 static NODE *
 make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTYPE *loc)
 {
-    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
+    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, NULL, loc);
 
     if (copy) {
         return NEW_CALL(fcore, rb_intern("make_shareable_copy"),
@@ -13486,7 +13446,7 @@ make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTY
 static NODE *
 ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const YYLTYPE *loc)
 {
-    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
+    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, NULL, loc);
     NODE *args = NEW_LIST(value, loc);
     args = list_append(p, args, const_decl_path(p, dest));
     return NEW_CALL(fcore, rb_intern("ensure_shareable"), args, loc);
@@ -13549,7 +13509,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_ZLIST:
         lit = rb_ary_new();
         OBJ_FREEZE_RAW(lit);
-        NODE *n = NEW_LIT(lit, loc);
+        NODE *n = NEW_LIT(lit, NULL, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
         return n;
 
@@ -13636,7 +13596,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
         value = make_shareable_node(p, value, false, loc);
     }
     else {
-        value = NEW_LIT(rb_ractor_make_shareable(lit), loc);
+        value = NEW_LIT(rb_ractor_make_shareable(lit), NULL, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(value)->nd_lit);
     }
 
@@ -14212,44 +14172,6 @@ new_yield(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     return NEW_YIELD(node, loc);
 }
 
-static VALUE
-negate_lit(struct parser_params *p, VALUE lit)
-{
-    if (FIXNUM_P(lit)) {
-        return LONG2FIX(-FIX2LONG(lit));
-    }
-    if (SPECIAL_CONST_P(lit)) {
-#if USE_FLONUM
-        if (FLONUM_P(lit)) {
-            return DBL2NUM(-RFLOAT_VALUE(lit));
-        }
-#endif
-        goto unknown;
-    }
-    switch (BUILTIN_TYPE(lit)) {
-      case T_BIGNUM:
-        bignum_negate(lit);
-        lit = rb_big_norm(lit);
-        break;
-      case T_RATIONAL:
-        rational_set_num(lit, negate_lit(p, rational_get_num(lit)));
-        break;
-      case T_COMPLEX:
-        rcomplex_set_real(lit, negate_lit(p, rcomplex_get_real(lit)));
-        rcomplex_set_imag(lit, negate_lit(p, rcomplex_get_imag(lit)));
-        break;
-      case T_FLOAT:
-        lit = DBL2NUM(-RFLOAT_VALUE(lit));
-        break;
-      unknown:
-      default:
-        rb_parser_fatal(p, "unknown literal type (%s) passed to negate_lit",
-                        rb_builtin_class_name(lit));
-        break;
-    }
-    return lit;
-}
-
 static NODE *
 arg_blk_pass(NODE *node1, NODE *node2)
 {
@@ -14488,7 +14410,7 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     VALUE lit;
 
     if (!node) {
-        return NEW_LIT(ID2SYM(idNULL), loc);
+        return NEW_LIT(ID2SYM(idNULL), NULL, loc);
     }
 
     switch (nd_type(node)) {
@@ -15243,7 +15165,7 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
         if (!lvar_defined(p, var)) return ST_CONTINUE;
     }
-    node = node_assign(p, assignable(p, var, 0, loc), NEW_LIT(ID2SYM(var), loc), NO_LEX_CTXT, loc);
+    node = node_assign(p, assignable(p, var, 0, loc), NEW_LIT(ID2SYM(var), NULL, loc), NO_LEX_CTXT, loc);
     succ = *succ_block;
     if (!succ) succ = NEW_BEGIN(0, loc);
     succ = block_append(p, succ, node);
@@ -15335,7 +15257,7 @@ parser_append_options(struct parser_params *p, NODE *node)
             node = block_append(p, split, node);
         }
         if (p->do_chomp) {
-            NODE *chomp = NEW_LIT(ID2SYM(rb_intern("chomp")), LOC);
+            NODE *chomp = NEW_LIT(ID2SYM(rb_intern("chomp")), NULL, LOC);
             chomp = list_append(p, NEW_LIST(chomp, LOC), NEW_TRUE(LOC));
             irs = list_append(p, irs, NEW_HASH(chomp, LOC));
         }
