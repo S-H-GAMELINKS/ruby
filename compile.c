@@ -9486,6 +9486,12 @@ rb_compile_numeric_literal(rb_literal_t *literal)
     return 0;
 }
 
+VALUE
+rb_compile_symbol_literal(rb_literal_t *literal)
+{
+    return ID2SYM(literal->symbol_literal_info.symbol_id);
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node

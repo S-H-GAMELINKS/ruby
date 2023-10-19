@@ -168,7 +168,8 @@ typedef struct rb_code_location_struct {
 enum rb_literal_type {
     integer_literal,
     float_literal,
-    rational_literal
+    rational_literal,
+    symbol_literal
 };
 
 typedef struct rb_numeric_literal_info {
@@ -178,10 +179,15 @@ typedef struct rb_numeric_literal_info {
     int is_imaginary;
 } rb_numeric_literal_info_t;
 
+typedef struct rb_symbol_literal_info {
+    ID symbol_id;
+} rb_symbol_literal_info_t;
+
 typedef struct rb_literal_struct {
     char *val;
     enum rb_literal_type type;
     rb_numeric_literal_info_t numeric_literal_info;
+    rb_symbol_literal_info_t symbol_literal_info;
 } rb_literal_t;
 
 /* Header part of AST Node */
