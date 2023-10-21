@@ -3008,7 +3008,7 @@ fitem		: fname
                         rb_literal_t *literal = malloc(sizeof(rb_literal_t));
                         literal->type = symbol_literal;
                         literal->symbol_literal_info.symbol_id = $1;
-                        $$ = NEW_LIT(ID2SYM($1), literal, &@$);
+                        $$ = NEW_LIT(0, literal, &@$);
                     /*% %*/
                     /*% ripper: symbol_literal!($1) %*/
                     }
@@ -5213,7 +5213,7 @@ p_kw		: p_kw_label p_expr
                         rb_literal_t *literal = malloc(sizeof(rb_literal_t));
                         literal->type = symbol_literal;
                         literal->symbol_literal_info.symbol_id = $1;
-                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), literal, &@1), &@$), $2);
+                        $$ = list_append(p, NEW_LIST(NEW_LIT(0, literal, &@1), &@$), $2);
                     /*% %*/
                     /*% ripper: rb_ary_new_from_args(2, get_value($1), get_value($2)) %*/
                     }
@@ -5228,7 +5228,7 @@ p_kw		: p_kw_label p_expr
                         rb_literal_t *literal = malloc(sizeof(rb_literal_t));
                         literal->type = symbol_literal;
                         literal->symbol_literal_info.symbol_id = $1;
-                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), literal, &@$), &@$), assignable(p, $1, 0, &@$));
+                        $$ = list_append(p, NEW_LIST(NEW_LIT(0, literal, &@$), &@$), assignable(p, $1, 0, &@$));
                     /*% %*/
                     /*% ripper: rb_ary_new_from_args(2, get_value(assignable(p, $1)), Qnil) %*/
                     }
@@ -5823,7 +5823,7 @@ ssym		: tSYMBEG sym
                         rb_literal_t *literal = malloc(sizeof(rb_literal_t));
                         literal->type = symbol_literal;
                         literal->symbol_literal_info.symbol_id = $2;
-                        $$ = NEW_LIT(ID2SYM($2), literal, &@$);
+                        $$ = NEW_LIT(0, literal, &@$);
                     /*% %*/
                     /*% ripper: symbol_literal!(symbol!($2)) %*/
                     }
@@ -6492,7 +6492,7 @@ assoc		: arg_value tASSOC arg_value
                         rb_literal_t *literal = malloc(sizeof(rb_literal_t));
                         literal->type = symbol_literal;
                         literal->symbol_literal_info.symbol_id = $1;
-                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), literal, &@1), &@$), $2);
+                        $$ = list_append(p, NEW_LIST(NEW_LIT(0, literal, &@1), &@$), $2);
                     /*% %*/
                     /*% ripper: assoc_new!($1, $2) %*/
                     }
@@ -6504,7 +6504,7 @@ assoc		: arg_value tASSOC arg_value
                         rb_literal_t *literal = malloc(sizeof(rb_literal_t));
                         literal->type = symbol_literal;
                         literal->symbol_literal_info.symbol_id = $1;
-                        $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), literal, &@1), &@$), val);
+                        $$ = list_append(p, NEW_LIST(NEW_LIT(0, literal, &@1), &@$), val);
                     /*% %*/
                     /*% ripper: assoc_new!($1, Qnil) %*/
                     }
@@ -11725,14 +11725,14 @@ static rb_node_lit_t *
 rb_node_lit_new(struct parser_params *p, VALUE nd_lit, rb_literal_t *literal, const YYLTYPE *loc)
 {
     rb_node_lit_t *n = NODE_NEWNODE(NODE_LIT, rb_node_lit_t, loc);
-    if (literal != NULL) {
+    if (nd_lit && literal == NULL) {
+        n->nd_lit = nd_lit;
+    } else {
         if (literal->type == integer_literal || literal->type == float_literal || literal->type == rational_literal) {
             n->nd_lit = rb_compile_numeric_literal(literal);
         } else if (literal->type == symbol_literal) {
             n->nd_lit =rb_compile_symbol_literal(literal);
         }
-    } else {
-        n->nd_lit = nd_lit;
     }
     n->not_used = 0;
     n->not_used2 = 0;
@@ -14435,7 +14435,7 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
         rb_literal_t *literal = malloc(sizeof(rb_literal_t));
         literal->type = symbol_literal;
         literal->symbol_literal_info.symbol_id = idNULL;
-        return NEW_LIT(ID2SYM(idNULL), literal, loc);
+        return NEW_LIT(0, literal, loc);
     }
 
     switch (nd_type(node)) {
@@ -15193,7 +15193,7 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     rb_literal_t *literal = malloc(sizeof(rb_literal_t));
     literal->type = symbol_literal;
     literal->symbol_literal_info.symbol_id = var;
-    node = node_assign(p, assignable(p, var, 0, loc), NEW_LIT(ID2SYM(var), NULL, loc), NO_LEX_CTXT, loc);
+    node = node_assign(p, assignable(p, var, 0, loc), NEW_LIT(0, literal, loc), NO_LEX_CTXT, loc);
     succ = *succ_block;
     if (!succ) succ = NEW_BEGIN(0, loc);
     succ = block_append(p, succ, node);
@@ -15288,7 +15288,7 @@ parser_append_options(struct parser_params *p, NODE *node)
             rb_literal_t *literal = malloc(sizeof(rb_literal_t));
             literal->type = symbol_literal;
             literal->symbol_literal_info.symbol_id = rb_intern("chomp");
-            NODE *chomp = NEW_LIT(ID2SYM(rb_intern("chomp")), literal, LOC);
+            NODE *chomp = NEW_LIT(0, literal, LOC);
             chomp = list_append(p, NEW_LIST(chomp, LOC), NEW_TRUE(LOC));
             irs = list_append(p, irs, NEW_HASH(chomp, LOC));
         }
