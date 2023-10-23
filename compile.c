@@ -9492,6 +9492,17 @@ rb_compile_symbol_literal(rb_literal_t *literal)
     return ID2SYM(literal->symbol_literal_info.symbol_id);
 }
 
+VALUE
+rb_compile_empty_hash_literal(void)
+{
+    static VALUE empty_hash;
+    if (!empty_hash) {
+        empty_hash = rb_obj_freeze(rb_hash_new());
+        rb_gc_register_mark_object(empty_hash);
+    }
+    return empty_hash;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node

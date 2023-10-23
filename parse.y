@@ -6521,12 +6521,7 @@ assoc		: arg_value tASSOC arg_value
                     /*%%%*/
                         if (nd_type_p($2, NODE_HASH) &&
                             !(RNODE_HASH($2)->nd_head && RNODE_LIST(RNODE_HASH($2)->nd_head)->as.nd_alen)) {
-                            static VALUE empty_hash;
-                            if (!empty_hash) {
-                                empty_hash = rb_obj_freeze(rb_hash_new());
-                                rb_gc_register_mark_object(empty_hash);
-                            }
-                            $$ = list_append(p, NEW_LIST(0, &@$), NEW_LIT(empty_hash, NULL, &@$));
+                            $$ = list_append(p, NEW_LIST(0, &@$), NEW_LIT(rb_compile_empty_hash_literal(), NULL, &@$));
                         }
                         else
                             $$ = list_append(p, NEW_LIST(0, &@$), $2);

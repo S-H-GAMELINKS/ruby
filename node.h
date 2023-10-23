@@ -126,5 +126,6 @@ nd_type_p(const NODE *n, enum node_type t)
 
 VALUE rb_compile_numeric_literal(rb_literal_t *literal);
 VALUE rb_compile_symbol_literal(rb_literal_t *literal);
+VALUE rb_compile_empty_hash_literal(void);
 
 #endif /* RUBY_NODE_H */
