@@ -9874,7 +9874,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             if (RB_TYPE_P(lit, T_REGEXP) || RB_TYPE_P(lit, T_STRING) || SYMBOL_P(lit)) {
                 // nothing to do.
             } else if (RNODE_LIT(node)->literal != NULL) {
-                lit = rb_compile_numeric_literal(RNODE_LIT(node)->literal);
+                if (RNODE_LIT(node)->literal->type == integer_literal || RNODE_LIT(node)->literal->type == float_literal || RNODE_LIT(node)->literal->type == rational_literal) {
+                    lit = rb_compile_numeric_literal(RNODE_LIT(node)->literal);
+                } else if (RNODE_LIT(node)->literal->type == symbol_literal) {
+                    lit =rb_compile_symbol_literal(RNODE_LIT(node)->literal);
+                } else if (RNODE_LIT(node)->literal->type == encoding_literal) {
+                    lit = rb_enc_from_encoding(RNODE_LIT(node)->literal->encoding_literal_info.encoding);
+                }
             }
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
