@@ -12659,11 +12659,13 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
       case keyword__LINE__:
         return NEW_LIT(INT2FIX(p->tokline), NULL, loc);
       case keyword__ENCODING__:
-        rb_literal_t *literal = malloc(sizeof(rb_literal_t));
-        literal->type = encoding_literal;
-        literal->encoding_literal_info.encoding = p->enc;
-        node = NEW_LIT(0, literal, loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
+        {
+            rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+            literal->type = encoding_literal;
+            literal->encoding_literal_info.encoding = p->enc;
+            node = NEW_LIT(0, literal, loc);
+            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
+        }
         return node;
 
     }
