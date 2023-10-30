@@ -8734,6 +8734,7 @@ set_number_literal(struct parser_params *p, enum yytokentype type, int suffix, i
     literal->numeric_literal_info.base = base;
     literal->numeric_literal_info.seen_point = seen_point;
     literal->numeric_literal_info.is_imaginary = FALSE;
+    literal->numeric_literal_info.is_tokenline = FALSE;
 
     if (type == tINTEGER) {
         literal->type = integer_literal;
@@ -12657,7 +12658,14 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         }
         return node;
       case keyword__LINE__:
-        return NEW_LIT(INT2FIX(p->tokline), NULL, loc);
+        {
+            rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+            literal->type = integer_literal;
+            literal->numeric_literal_info.is_tokenline = TRUE;
+            literal->numeric_literal_info.tokenline = p->tokline;
+            node = NEW_LIT(0, literal, loc);
+        }
+        return node;
       case keyword__ENCODING__:
         {
             rb_literal_t *literal = malloc(sizeof(rb_literal_t));

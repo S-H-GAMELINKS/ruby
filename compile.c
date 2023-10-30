@@ -9477,6 +9477,9 @@ VALUE
 rb_compile_numeric_literal(rb_literal_t *literal)
 {
     if (literal->type == integer_literal) {
+        if (literal->numeric_literal_info.is_tokenline == TRUE) {
+            return INT2FIX(literal->numeric_literal_info.tokenline);
+        }
         return rb_compile_integer_literal(literal);
     } else if (literal->type == float_literal) {
         return rb_compile_float_literal(literal);

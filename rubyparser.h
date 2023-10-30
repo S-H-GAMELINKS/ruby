@@ -178,6 +178,8 @@ typedef struct rb_numeric_literal_info {
     int base;
     int seen_point;
     int is_imaginary;
+    int is_tokenline;
+    int tokenline;
 } rb_numeric_literal_info_t;
 
 typedef struct rb_symbol_literal_info {
