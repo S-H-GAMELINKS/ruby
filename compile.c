@@ -9506,6 +9506,12 @@ rb_compile_empty_hash_literal(void)
     return empty_hash;
 }
 
+VALUE
+rb_compile_ruby_vm_core_literal(void)
+{
+    return rb_mRubyVMFrozenCore;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9883,6 +9889,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
                     lit =rb_compile_symbol_literal(RNODE_LIT(node)->literal);
                 } else if (RNODE_LIT(node)->literal->type == encoding_literal) {
                     lit = rb_enc_from_encoding(RNODE_LIT(node)->literal->encoding_literal_info.encoding);
+                } else if (RNODE_LIT(node)->literal->type == ruby_vm_frozen_liteal) {
+                    lit = rb_compile_ruby_vm_core_literal();
                 }
             }
             ADD_INSN1(ret, node, putobject, lit);

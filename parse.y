@@ -11730,6 +11730,8 @@ rb_node_lit_new(struct parser_params *p, VALUE nd_lit, rb_literal_t *literal, co
             n->nd_lit =rb_compile_symbol_literal(literal);
         } else if (literal->type == encoding_literal) {
             n->nd_lit = rb_enc_from_encoding(literal->encoding_literal_info.encoding);
+        } else if (literal->type == ruby_vm_frozen_liteal) {
+            n->nd_lit = rb_compile_ruby_vm_core_literal();
         }
     }
     n->not_used = 0;
@@ -13463,7 +13465,9 @@ const_decl_path(struct parser_params *p, NODE **dest)
 static NODE *
 make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTYPE *loc)
 {
-    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, NULL, loc);
+    rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+    literal->type = ruby_vm_frozen_liteal;
+    NODE *fcore = NEW_LIT(0, literal, loc);
 
     if (copy) {
         return NEW_CALL(fcore, rb_intern("make_shareable_copy"),
@@ -13478,7 +13482,9 @@ make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTY
 static NODE *
 ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const YYLTYPE *loc)
 {
-    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, NULL, loc);
+    rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+    literal->type = ruby_vm_frozen_liteal;
+    NODE *fcore = NEW_LIT(0, literal, loc);
     NODE *args = NEW_LIST(value, loc);
     args = list_append(p, args, const_decl_path(p, dest));
     return NEW_CALL(fcore, rb_intern("ensure_shareable"), args, loc);

@@ -170,7 +170,8 @@ enum rb_literal_type {
     float_literal,
     rational_literal,
     symbol_literal,
-    encoding_literal
+    encoding_literal,
+    ruby_vm_frozen_liteal
 };
 
 typedef struct rb_numeric_literal_info {
