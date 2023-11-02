@@ -6521,7 +6521,10 @@ assoc		: arg_value tASSOC arg_value
                     /*%%%*/
                         if (nd_type_p($2, NODE_HASH) &&
                             !(RNODE_HASH($2)->nd_head && RNODE_LIST(RNODE_HASH($2)->nd_head)->as.nd_alen)) {
-                            $$ = list_append(p, NEW_LIST(0, &@$), NEW_LIT(rb_compile_empty_hash_literal(), NULL, &@$));
+                            rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+                            literal->type = hash_literal;
+                            literal->hash_literal_info.is_empty = TRUE;
+                            $$ = list_append(p, NEW_LIST(0, &@$), NEW_LIT(0, literal, &@$));
                         }
                         else
                             $$ = list_append(p, NEW_LIST(0, &@$), $2);
@@ -11732,6 +11735,8 @@ rb_node_lit_new(struct parser_params *p, VALUE nd_lit, rb_literal_t *literal, co
             n->nd_lit = rb_enc_from_encoding(literal->encoding_literal_info.encoding);
         } else if (literal->type == ruby_vm_frozen_liteal) {
             n->nd_lit = rb_compile_ruby_vm_core_literal();
+        } else if (literal->type == hash_literal && literal->hash_literal_info.is_empty) {
+            n->nd_lit = rb_compile_empty_hash_literal();
         }
     }
     n->not_used = 0;
