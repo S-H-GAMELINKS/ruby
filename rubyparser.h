@@ -1367,10 +1367,6 @@ typedef struct rb_parser_config_struct {
     int (*rtest)(VALUE obj);
     int (*nil_p)(VALUE obj);
     int (*flonum_p)(VALUE obj);
-    VALUE qnil;
-    VALUE qtrue;
-    VALUE qfalse;
-    VALUE qundef;
     VALUE eArgError;
     VALUE mRubyVMFrozenCore;
     int (*long2int)(long);
@@ -1399,5 +1395,54 @@ rb_parser_t *rb_ruby_parser_allocate(rb_parser_config_t *config);
 rb_parser_t *rb_ruby_parser_new(rb_parser_config_t *config);
 #endif
 RUBY_SYMBOL_EXPORT_END
+
+#ifdef UNIVERSAL_PARSER
+#if defined(USE_FLONUM)
+# /* Take that. */
+#elif SIZEOF_VALUE >= SIZEOF_DOUBLE
+# define USE_FLONUM 1
+#else
+# define USE_FLONUM 0
+#endif
+
+#undef Qfalse
+#define Qfalse          RUBY_PARSER_Qfalse            /**< @old{RUBY_Qfalse} */
+#undef Qnil
+#define Qnil            RUBY_PARSER_Qnil              /**< @old{RUBY_Qnil} */
+#undef Qtrue
+#define Qtrue           RUBY_PARSER_Qtrue             /**< @old{RUBY_Qtrue} */
+#undef Qundef
+#define Qundef          RUBY_PARSER_Qundef            /**< @old{RUBY_Qundef} */
+
+enum
+ruby_parser_special_consts {
+#if defined(__DOXYGEN__)
+    RUBY_PARSER_Qfalse,                /**< @see ::rb_cFalseClass */
+    RUBY_PARSER_Qtrue,                 /**< @see ::rb_cTrueClass */
+    RUBY_PARSER_Qnil,                  /**< @see ::rb_cNilClass */
+    RUBY_PARSER_Qundef,                /**< Represents so-called undef. */
+#elif USE_FLONUM
+    RUBY_PARSER_Qfalse         = 0x00, /* ...0000 0000 */
+    RUBY_PARSER_Qnil           = 0x04, /* ...0000 0100 */
+    RUBY_PARSER_Qtrue          = 0x14, /* ...0001 0100 */
+    RUBY_PARSER_Qundef         = 0x24, /* ...0010 0100 */
+#else
+    RUBY_PARSER_Qfalse         = 0x00, /* ...0000 0000 */
+    RUBY_PARSER_Qnil           = 0x02, /* ...0000 0010 */
+    RUBY_PARSER_Qtrue          = 0x06, /* ...0000 0110 */
+    RUBY_PARSER_Qundef         = 0x0a, /* ...0000 1010 */
+#endif
+};
+
+#undef RUBY_Qfalse
+#define RUBY_Qfalse RBIMPL_CAST((VALUE)RUBY_PARSER_Qfalse)
+#undef RUBY_Qtrue
+#define RUBY_Qtrue  RBIMPL_CAST((VALUE)RUBY_PARSER_Qtrue)
+#undef RUBY_Qnil
+#define RUBY_Qnil   RBIMPL_CAST((VALUE)RUBY_PARSER_Qnil)
+#undef RUBY_Qundef
+#define RUBY_Qundef RBIMPL_CAST((VALUE)RUBY_PARSER_Qundef)
+
+#endif
 
 #endif /* RUBY_RUBYPARSER_H */

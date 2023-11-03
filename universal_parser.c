@@ -348,14 +348,6 @@ struct rb_imemo_tmpbuf_struct {
 #define NIL_P p->config->nil_p
 #undef FLONUM_P
 #define FLONUM_P p->config->flonum_p
-#undef Qnil
-#define Qnil  p->config->qnil
-#undef Qtrue
-#define Qtrue p->config->qtrue
-#undef Qfalse
-#define Qfalse p->config->qfalse
-#undef Qundef
-#define Qundef p->config->qundef
 #define rb_eArgError p->config->eArgError
 #define rb_mRubyVMFrozenCore p->config->mRubyVMFrozenCore
 #undef rb_long2int

@@ -736,10 +736,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->rtest = rtest;
     config->nil_p = nil_p;
     config->flonum_p = flonum_p;
-    config->qnil  = Qnil;
-    config->qtrue = Qtrue;
-    config->qfalse = Qfalse;
-    config->qundef = Qundef;
     config->eArgError = rb_eArgError;
     config->mRubyVMFrozenCore = rb_mRubyVMFrozenCore;
     config->long2int = rb_long2int;
