@@ -13552,12 +13552,14 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
         return value;
 
       case NODE_ZLIST:
-        rb_literal_t *literal = malloc(sizeof(rb_literal_t));
-        literal->type = array_literal;
-        literal->array_literal_info.is_empty = TRUE;
-        NODE *n = NEW_LIT(0, literal, loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
-        return n;
+        {
+            rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+            literal->type = array_literal;
+            literal->array_literal_info.is_empty = TRUE;
+            NODE *n = NEW_LIT(0, literal, loc);
+            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
+            return n;
+        }
 
       case NODE_LIST:
         lit = rb_ary_new();
