@@ -9507,6 +9507,14 @@ rb_compile_empty_hash_literal(void)
 }
 
 VALUE
+rb_compile_empty_array_literal(void)
+{
+    VALUE lit = rb_ary_new();
+    OBJ_FREEZE_RAW(lit);
+    return lit;
+}
+
+VALUE
 rb_compile_ruby_vm_core_literal(void)
 {
     return rb_mRubyVMFrozenCore;

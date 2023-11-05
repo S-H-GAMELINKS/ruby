@@ -11737,6 +11737,8 @@ rb_node_lit_new(struct parser_params *p, VALUE nd_lit, rb_literal_t *literal, co
             n->nd_lit = rb_compile_ruby_vm_core_literal();
         } else if (literal->type == hash_literal && literal->hash_literal_info.is_empty) {
             n->nd_lit = rb_compile_empty_hash_literal();
+        } else if (literal->type == array_literal && literal->array_literal_info.is_empty) {
+            n->nd_lit = rb_compile_empty_array_literal();
         }
     }
     n->not_used = 0;
@@ -13550,9 +13552,10 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
         return value;
 
       case NODE_ZLIST:
-        lit = rb_ary_new();
-        OBJ_FREEZE_RAW(lit);
-        NODE *n = NEW_LIT(lit, NULL, loc);
+        rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+        literal->type = array_literal;
+        literal->array_literal_info.is_empty = TRUE;
+        NODE *n = NEW_LIT(0, literal, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
         return n;
 
