@@ -11739,6 +11739,8 @@ rb_node_lit_new(struct parser_params *p, VALUE nd_lit, rb_literal_t *literal, co
             n->nd_lit = rb_compile_empty_hash_literal();
         } else if (literal->type == array_literal && literal->array_literal_info.is_empty) {
             n->nd_lit = rb_compile_empty_array_literal();
+        } else if (literal->type == string_literal) {
+            n->nd_lit = rb_compile_string_literal(literal);
         }
     }
     n->not_used = 0;
@@ -13436,34 +13438,23 @@ static NODE *
 const_decl_path(struct parser_params *p, NODE **dest)
 {
     NODE *n = *dest;
+    rb_literal_t *literal = malloc(sizeof(rb_literal_t));
     if (!nd_type_p(n, NODE_CALL)) {
         const YYLTYPE *loc = &n->nd_loc;
-        VALUE path;
         if (RNODE_DASGN(n)->nd_vid) {
-             path = rb_id2str(RNODE_DASGN(n)->nd_vid);
+            literal->type = symbol_literal;
+            literal->symbol_literal_info.symbol_id = RNODE_DASGN(n)->nd_vid;
         }
         else {
+            literal = NULL;
             n = RNODE_CDECL(n)->nd_else;
-            path = rb_ary_new();
-            for (; n && nd_type_p(n, NODE_COLON2); n = RNODE_COLON2(n)->nd_head) {
-                rb_ary_push(path, rb_id2str(RNODE_COLON2(n)->nd_mid));
-            }
-            if (n && nd_type_p(n, NODE_CONST)) {
-                // Const::Name
-                rb_ary_push(path, rb_id2str(RNODE_CONST(n)->nd_vid));
-            }
-            else if (n && nd_type_p(n, NODE_COLON3)) {
-                // ::Const::Name
-                rb_ary_push(path, rb_str_new(0, 0));
-            }
-            else {
-                // expression::Name
-                rb_ary_push(path, rb_str_new_cstr("..."));
-            }
-            path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
-            path = rb_fstring(path);
+            char *const_cstr_path = rb_generate_const_decl_cstr_path(n);
+            literal->type = string_literal;
+            literal->string_literal_info.encoding = p->enc;
+            literal->string_literal_info.length = strlen(const_cstr_path);
+            literal->val = const_cstr_path;
         }
-        *dest = n = NEW_LIT(path, NULL, loc);
+        *dest = n = NEW_LIT(0, literal, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
     }
     return n;

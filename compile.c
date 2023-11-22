@@ -9520,6 +9520,36 @@ rb_compile_ruby_vm_core_literal(void)
     return rb_mRubyVMFrozenCore;
 }
 
+VALUE
+rb_compile_string_literal(rb_literal_t *literal)
+{
+    return rb_enc_str_new(literal->val, literal->string_literal_info.length, literal->string_literal_info.encoding);
+}
+
+char *
+rb_generate_const_decl_cstr_path(NODE *n)
+{
+    VALUE path = rb_ary_new();
+    for (; n && nd_type_p(n, NODE_COLON2); n = RNODE_COLON2(n)->nd_head) {
+        rb_ary_push(path, rb_id2str(RNODE_COLON2(n)->nd_mid));
+    }
+    if (n && nd_type_p(n, NODE_CONST)) {
+        // Const::Name
+        rb_ary_push(path, rb_id2str(RNODE_CONST(n)->nd_vid));
+    }
+    else if (n && nd_type_p(n, NODE_COLON3)) {
+        // ::Const::Name
+        rb_ary_push(path, rb_str_new(0, 0));
+    }
+    else {
+        // expression::Name
+        rb_ary_push(path, rb_str_new_cstr("..."));
+    }
+    path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
+    path = rb_fstring(path);
+    return RSTRING_PTR(path);
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node

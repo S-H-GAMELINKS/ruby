@@ -129,5 +129,6 @@ VALUE rb_compile_symbol_literal(rb_literal_t *literal);
 VALUE rb_compile_empty_hash_literal(void);
 VALUE rb_compile_empty_array_literal(void);
 VALUE rb_compile_ruby_vm_core_literal(void);
-
+char *rb_generate_const_decl_cstr_path(NODE *n);
+VALUE rb_compile_string_literal(rb_literal_t *literal);
 #endif /* RUBY_NODE_H */
