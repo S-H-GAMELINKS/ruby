@@ -174,7 +174,8 @@ enum rb_literal_type {
     ruby_vm_frozen_liteal,
     hash_literal,
     array_literal,
-    string_literal
+    string_literal,
+    regexp_literal
 };
 
 typedef struct rb_numeric_literal_info {
@@ -207,6 +208,10 @@ typedef struct rb_string_literal_info {
     long length;
 } rb_string_literal_info_t;
 
+typedef struct rb_regexp_literal_info {
+    int options;
+} rb_regexp_literal_info_t;
+
 typedef struct rb_literal_struct {
     char *val;
     enum rb_literal_type type;
@@ -216,6 +221,7 @@ typedef struct rb_literal_struct {
     rb_hash_literal_info_t hash_literal_info;
     rb_array_literal_info_t array_literal_info;
     rb_string_literal_info_t string_literal_info;
+    rb_regexp_literal_info_t regexp_literal_info;
 } rb_literal_t;
 
 /* Header part of AST Node */

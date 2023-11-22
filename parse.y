@@ -11741,6 +11741,8 @@ rb_node_lit_new(struct parser_params *p, VALUE nd_lit, rb_literal_t *literal, co
             n->nd_lit = rb_compile_empty_array_literal();
         } else if (literal->type == string_literal) {
             n->nd_lit = rb_compile_string_literal(literal);
+        } else if (literal->type == regexp_literal) {
+            n->nd_lit = reg_compile(p, rb_compile_string_literal(literal), literal->regexp_literal_info.options);
         }
     }
     n->not_used = 0;
@@ -12793,7 +12795,13 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
     VALUE lit;
 
     if (!node) {
-        node = NEW_LIT(reg_compile(p, STR_NEW0(), options), NULL, loc);
+        rb_literal_t *literal = malloc(sizeof(rb_literal_t));
+        literal->type = regexp_literal;
+        literal->val = 0;
+        literal->string_literal_info.length = 0;
+        literal->string_literal_info.encoding = p->enc;
+        literal->regexp_literal_info.options = options;
+        node = NEW_LIT(0, literal, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
         return node;
     }
