@@ -7123,6 +7123,10 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       }
       case NODE_LIT:
       case NODE_LINE:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
       case NODE_FILE:
       case NODE_STR:
       case NODE_XSTR:
@@ -7275,7 +7279,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         break;
       }
       default:
-        UNKNOWN_NODE("NODE_IN", node, COMPILE_NG);
+        UNKNOWN_NODE("NODE_IN::::::::", node, COMPILE_NG);
     }
     return COMPILE_OK;
 }
@@ -9788,6 +9792,126 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     return COMPILE_OK;
 }
 
+static VALUE
+compile_negative_numeric(VALUE val)
+{
+    if (FIXNUM_P(val)) {
+        return LONG2FIX(-FIX2LONG(val));
+    }
+    if (SPECIAL_CONST_P(val)) {
+#if USE_FLONUM
+        if (FLONUM_P(val)) {
+            return DBL2NUM(-RFLOAT_VALUE(val));
+        }
+#endif
+    }
+    switch (OBJ_BUILTIN_TYPE(val))
+    {
+    case T_BIGNUM:
+        BIGNUM_NEGATE(val);
+        val = rb_big_norm(val);
+        break;
+    case T_RATIONAL:
+        RATIONAL_SET_NUM(val, compile_negative_numeric(RRATIONAL(val)->num));
+        break;
+    case T_COMPLEX:
+        RCOMPLEX_SET_REAL(val, compile_negative_numeric(RCOMPLEX(val)->real));
+        RCOMPLEX_SET_IMAG(val, compile_negative_numeric(RCOMPLEX(val)->imag));
+        break;
+    case T_FLOAT:
+        val = DBL2NUM(-RFLOAT_VALUE(val));
+        break;
+    default:
+        val = LONG2FIX(-FIX2LONG(val));
+        break;
+    }
+    return val;
+}
+
+VALUE
+rb_compile_integer_literal(rb_node_integer_t* node)
+{
+    VALUE val = rb_cstr_to_inum(node->val, node->base, FALSE);
+    if (node->tminus) {
+        val = compile_negative_numeric(val);
+    }
+    return val;
+}
+
+VALUE
+rb_compile_float_literal(rb_node_float_t* node)
+{
+    double d = strtod(node->val, 0);
+    VALUE val = DBL2NUM(d);
+    if (node->tminus) {
+        val = compile_negative_numeric(val);
+    }
+    return val;
+}
+
+static VALUE
+compile_rational_literal(char* val, int base, int seen_point)
+{
+    if (seen_point > 0) {
+        int len = (int)(strlen(val));
+        char *point = &val[seen_point];
+        size_t fraclen = len-seen_point-1;
+        memmove(point, point+1, fraclen+1);
+
+        return rb_rational_new(rb_cstr_to_inum(val, base, FALSE), rb_int_positive_pow(10, fraclen));
+    }
+    return rb_rational_raw1(rb_cstr_to_inum(val, base, FALSE));
+}
+
+VALUE
+rb_compile_rational_literal(rb_node_rational_t* node)
+{
+    VALUE lit;
+    char *val = strdup(node->val);
+    int base = node->base;
+    int seen_point = node->seen_point;
+
+    lit = compile_rational_literal(val, base, seen_point);
+
+    if (node->tminus) {
+        lit = compile_negative_numeric(lit);
+    }
+
+    free(val);
+
+    return lit;
+}
+
+VALUE
+rb_compile_imaginary_literal(rb_node_imaginary_t* node)
+{
+    VALUE lit;
+
+    enum rb_numeric_type type = node->type;
+
+    switch (type) {
+        case integer_literal:
+            lit = rb_cstr_to_inum(node->val, node->base, FALSE);
+            break;
+        case float_literal:
+            double d = strtod(node->val, 0);
+            lit = DBL2NUM(d);
+            break;
+        case rational_literal:
+            lit = compile_rational_literal(node->val, node->base, node->seen_point);
+            break;
+        default:
+            rb_bug("unreachable");
+    }
+
+    lit = rb_complex_raw(INT2FIX(0), lit);
+
+    if (node->tminus) {
+        lit = compile_negative_numeric(lit);
+    }
+    return lit;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -10154,6 +10278,42 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+      case NODE_INTEGER: {
+        VALUE lit = rb_compile_integer_literal(RNODE_INTEGER(node));
+        debugp_param("integer", lit);
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        }
+        break;
+      case NODE_FLOAT: {
+        VALUE lit = rb_compile_float_literal(RNODE_FLOAT(node));
+        debugp_param("lit", lit);
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        }
+        break;
+      case NODE_RATIONAL: {
+        VALUE lit = rb_compile_rational_literal(RNODE_RATIONAL(node));
+        debugp_param("lit", lit);
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        }
+        break;
+      case NODE_IMAGINARY: {
+        VALUE lit = rb_compile_imaginary_literal(RNODE_IMAGINARY(node));
+        debugp_param("lit", lit);
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        }
+        break;
       case NODE_FILE:
       case NODE_STR:{
         debugp_param("nd_lit", get_string_value(node));
