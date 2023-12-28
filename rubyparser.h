@@ -635,8 +635,6 @@ typedef struct RNode_LIT {
 typedef struct RNode_INTEGER {
     NODE node;
 
-    VALUE nd_lit;
-
     char* val;
     int tminus;
     int base;
@@ -645,16 +643,12 @@ typedef struct RNode_INTEGER {
 typedef struct RNode_FLOAT {
     NODE node;
 
-    VALUE nd_lit;
-
     char* val;
     int tminus;
 } rb_node_float_t;
 
 typedef struct RNode_RATIONAL {
     NODE node;
-
-    VALUE nd_lit;
 
     char* val;
     int tminus;
@@ -671,14 +665,12 @@ enum rb_numeric_type {
 typedef struct RNode_IMAGINARY {
     NODE node;
 
-    VALUE nd_lit;
-
     char* val;
     int tminus;
     int base;
     int seen_point;
     enum rb_numeric_type type;
-} rb_node_imaginary_t;  
+} rb_node_imaginary_t;
 
 typedef struct RNode_STR {
     NODE node;

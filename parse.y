@@ -6083,23 +6083,6 @@ numeric 	: simple_numeric
                     /*%%%*/
                         $$ = $2;
                         negate_lit(p, $$);
-                        
-                        switch (nd_type($$)) {
-                            case NODE_INTEGER:
-                                RB_OBJ_WRITE(p->ast, &RNODE_INTEGER($$)->nd_lit, rb_compile_integer_literal(RNODE_INTEGER($$)));
-                                break;
-                            case NODE_FLOAT:
-                                RB_OBJ_WRITE(p->ast, &RNODE_FLOAT($$)->nd_lit, rb_compile_float_literal(RNODE_FLOAT($$)));
-                                break;
-                            case NODE_RATIONAL:
-                                RB_OBJ_WRITE(p->ast, &RNODE_RATIONAL($$)->nd_lit, rb_compile_rational_literal(RNODE_RATIONAL($$)));
-                                break;
-                            case NODE_IMAGINARY:
-                                RB_OBJ_WRITE(p->ast, &RNODE_IMAGINARY($$)->nd_lit, rb_compile_imaginary_literal(RNODE_IMAGINARY($$)));
-                                break;
-                            default:
-                                break;
-                        }                        
                     /*% %*/
                     /*% ripper: unary!(ID2VAL(idUMinus), $2) %*/
                     }
@@ -11948,7 +11931,6 @@ rb_node_integer_new(struct parser_params *p, char* val, int base, const YYLTYPE 
     n->val = val;
     n->tminus = FALSE;
     n->base = base;
-    n->nd_lit = Qundef;
 
     return n;
 }
@@ -11958,7 +11940,6 @@ rb_node_float_new(struct parser_params *p, char* val, const YYLTYPE *loc) {
     rb_node_float_t *n = NODE_NEWNODE(NODE_FLOAT, rb_node_float_t, loc);
     n->val = val;
     n->tminus = FALSE;
-    n->nd_lit = Qundef;
 
     return n;
 }
@@ -11970,7 +11951,6 @@ rb_node_rational_new(struct parser_params *p, char* val, int base, int seen_poin
     n->tminus = FALSE;
     n->base = base;
     n->seen_point = seen_point;
-    n->nd_lit = Qundef;
 
     return n;
 }
@@ -11983,7 +11963,6 @@ rb_node_imaginary_new(struct parser_params *p, char* val, int base, int seen_poi
     n->base = base;
     n->seen_point = seen_point;
     n->type = numeric_type;
-    n->nd_lit = Qundef;
 
     return n;
 }
