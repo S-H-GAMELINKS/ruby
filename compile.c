@@ -7279,7 +7279,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         break;
       }
       default:
-        UNKNOWN_NODE("NODE_IN::::::::", node, COMPILE_NG);
+        UNKNOWN_NODE("NODE_IN", node, COMPILE_NG);
     }
     return COMPILE_OK;
 }
@@ -9893,10 +9893,11 @@ rb_compile_imaginary_literal(rb_node_imaginary_t* node)
         case integer_literal:
             lit = rb_cstr_to_inum(node->val, node->base, FALSE);
             break;
-        case float_literal:
+        case float_literal: {
             double d = strtod(node->val, 0);
             lit = DBL2NUM(d);
             break;
+        }
         case rational_literal:
             lit = compile_rational_literal(node->val, node->base, node->seen_point);
             break;
