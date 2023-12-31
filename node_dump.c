@@ -704,6 +704,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         return;
 
       case NODE_LIT:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
         ANN("literal");
         ANN("format: [nd_lit]");
         ANN("example: 1, /foo/");

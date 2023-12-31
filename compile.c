@@ -1944,6 +1944,17 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
                 break;
               case NODE_LINE:
                 dv = rb_node_line_lineno_val(val_node);;
+              case NODE_INTEGER:
+                dv = rb_compile_integer_literal(RNODE_INTEGER(val_node));
+                break;
+              case NODE_FLOAT:
+                dv = rb_compile_float_literal(RNODE_FLOAT(val_node));
+                break;
+              case NODE_RATIONAL:
+                dv = rb_compile_rational_literal(RNODE_RATIONAL(val_node));
+                break;
+              case NODE_IMAGINARY:
+                dv = rb_compile_imaginary_literal(RNODE_IMAGINARY(val_node));
                 break;
               case NODE_NIL:
                 dv = Qnil;
@@ -4506,6 +4517,10 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
       case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_LINE:
       case NODE_FILE:
+      case NODE_INTEGER:    /* NODE_INTEGER is always true */
+      case NODE_FLOAT:      /* NODE_FLOAT is always true */
+      case NODE_RATIONAL:   /* NODE_RATIONAL is always true */
+      case NODE_IMAGINARY:  /* NODE_IMAGINARY is always true */
       case NODE_TRUE:
       case NODE_STR:
       case NODE_ZLIST:
@@ -4666,6 +4681,10 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq)
     switch (nd_type(node)) {
       case NODE_LIT:
       case NODE_LINE:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
       case NODE_NIL:
       case NODE_TRUE:
       case NODE_FALSE:
@@ -4682,6 +4701,14 @@ static inline VALUE
 static_literal_value(const NODE *node, rb_iseq_t *iseq)
 {
     switch (nd_type(node)) {
+      case NODE_INTEGER:
+        return rb_compile_integer_literal(RNODE_INTEGER(node));
+      case NODE_FLOAT:
+        return rb_compile_float_literal(RNODE_FLOAT(node));
+      case NODE_RATIONAL:
+        return rb_compile_rational_literal(RNODE_RATIONAL(node));
+      case NODE_IMAGINARY:
+        return rb_compile_imaginary_literal(RNODE_IMAGINARY(node));
       case NODE_NIL:
         return Qnil;
       case NODE_TRUE:
@@ -5072,6 +5099,14 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         }
         break;
       }
+      case NODE_INTEGER:
+        return rb_compile_integer_literal(RNODE_INTEGER(node));
+      case NODE_FLOAT:
+        return rb_compile_float_literal(RNODE_FLOAT(node));
+      case NODE_RATIONAL:
+        return rb_compile_rational_literal(RNODE_RATIONAL(node));
+      case NODE_IMAGINARY:
+        return rb_compile_imaginary_literal(RNODE_IMAGINARY(node));
       case NODE_NIL:
         return Qnil;
       case NODE_TRUE:
@@ -5710,6 +5745,10 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_LIT:
       case NODE_LINE:
       case NODE_FILE:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
       case NODE_ZLIST:
       case NODE_AND:
       case NODE_OR:
@@ -6286,6 +6325,14 @@ optimizable_range_item_p(const NODE *n)
         return RB_INTEGER_TYPE_P(RNODE_LIT(n)->nd_lit);
       case NODE_LINE:
         return TRUE;
+      case NODE_INTEGER:
+        return RB_INTEGER_TYPE_P(rb_compile_integer_literal(RNODE_INTEGER(n)));
+      case NODE_FLOAT:
+        return RB_INTEGER_TYPE_P(rb_compile_float_literal(RNODE_FLOAT(n)));
+      case NODE_RATIONAL:
+        return RB_INTEGER_TYPE_P(rb_compile_rational_literal(RNODE_RATIONAL(n)));
+      case NODE_IMAGINARY:
+        return RB_INTEGER_TYPE_P(rb_compile_imaginary_literal(RNODE_IMAGINARY(n)));
       case NODE_NIL:
         return TRUE;
       default:
@@ -6301,6 +6348,14 @@ optimized_range_item(const NODE *n)
         return RNODE_LIT(n)->nd_lit;
       case NODE_LINE:
         return rb_node_line_lineno_val(n);
+      case NODE_INTEGER:
+        return rb_compile_integer_literal(RNODE_INTEGER(n));
+      case NODE_FLOAT:
+        return rb_compile_float_literal(RNODE_FLOAT(n));
+      case NODE_RATIONAL:
+        return rb_compile_rational_literal(RNODE_RATIONAL(n));
+      case NODE_IMAGINARY:
+        return rb_compile_imaginary_literal(RNODE_IMAGINARY(n));
       case NODE_NIL:
         return Qnil;
       default:
@@ -9683,6 +9738,10 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     }
     else if (nd_type_p(default_value, NODE_LIT) ||
              nd_type_p(default_value, NODE_LINE) ||
+             nd_type_p(default_value, NODE_INTEGER) ||
+             nd_type_p(default_value, NODE_FLOAT) ||
+             nd_type_p(default_value, NODE_RATIONAL) ||
+             nd_type_p(default_value, NODE_IMAGINARY) ||
              nd_type_p(default_value, NODE_NIL) ||
              nd_type_p(default_value, NODE_TRUE) ||
              nd_type_p(default_value, NODE_FALSE)) {
