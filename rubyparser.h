@@ -636,7 +636,7 @@ typedef struct RNode_INTEGER {
     NODE node;
 
     char* val;
-    int tminus;
+    int minus;
     int base;
 } rb_node_integer_t;
 
@@ -644,14 +644,14 @@ typedef struct RNode_FLOAT {
     NODE node;
 
     char* val;
-    int tminus;
+    int minus;
 } rb_node_float_t;
 
 typedef struct RNode_RATIONAL {
     NODE node;
 
     char* val;
-    int tminus;
+    int minus;
     int base;
     int seen_point;
 } rb_node_rational_t;
@@ -666,7 +666,7 @@ typedef struct RNode_IMAGINARY {
     NODE node;
 
     char* val;
-    int tminus;
+    int minus;
     int base;
     int seen_point;
     enum rb_numeric_type type;

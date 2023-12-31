@@ -9891,7 +9891,7 @@ VALUE
 rb_compile_integer_literal(rb_node_integer_t* node)
 {
     VALUE val = rb_cstr_to_inum(node->val, node->base, FALSE);
-    if (node->tminus) {
+    if (node->minus) {
         val = compile_negative_numeric(val);
     }
     return val;
@@ -9902,7 +9902,7 @@ rb_compile_float_literal(rb_node_float_t* node)
 {
     double d = strtod(node->val, 0);
     VALUE val = DBL2NUM(d);
-    if (node->tminus) {
+    if (node->minus) {
         val = compile_negative_numeric(val);
     }
     return val;
@@ -9932,7 +9932,7 @@ rb_compile_rational_literal(rb_node_rational_t* node)
 
     lit = compile_rational_literal(val, base, seen_point);
 
-    if (node->tminus) {
+    if (node->minus) {
         lit = compile_negative_numeric(lit);
     }
 
@@ -9966,7 +9966,7 @@ rb_compile_imaginary_literal(rb_node_imaginary_t* node)
 
     lit = rb_complex_raw(INT2FIX(0), lit);
 
-    if (node->tminus) {
+    if (node->minus) {
         lit = compile_negative_numeric(lit);
     }
     return lit;

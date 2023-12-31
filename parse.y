@@ -11929,7 +11929,7 @@ static rb_node_integer_t *
 rb_node_integer_new(struct parser_params *p, char* val, int base, const YYLTYPE *loc) {
     rb_node_integer_t *n = NODE_NEWNODE(NODE_INTEGER, rb_node_integer_t, loc);
     n->val = val;
-    n->tminus = FALSE;
+    n->minus = FALSE;
     n->base = base;
 
     return n;
@@ -11939,7 +11939,7 @@ static rb_node_float_t *
 rb_node_float_new(struct parser_params *p, char* val, const YYLTYPE *loc) {
     rb_node_float_t *n = NODE_NEWNODE(NODE_FLOAT, rb_node_float_t, loc);
     n->val = val;
-    n->tminus = FALSE;
+    n->minus = FALSE;
 
     return n;
 }
@@ -11948,7 +11948,7 @@ static rb_node_rational_t *
 rb_node_rational_new(struct parser_params *p, char* val, int base, int seen_point, const YYLTYPE *loc) {
     rb_node_rational_t *n = NODE_NEWNODE(NODE_RATIONAL, rb_node_rational_t, loc);
     n->val = val;
-    n->tminus = FALSE;
+    n->minus = FALSE;
     n->base = base;
     n->seen_point = seen_point;
 
@@ -11959,7 +11959,7 @@ static rb_node_imaginary_t *
 rb_node_imaginary_new(struct parser_params *p, char* val, int base, int seen_point, enum rb_numeric_type numeric_type, const YYLTYPE *loc) {
     rb_node_imaginary_t *n = NODE_NEWNODE(NODE_IMAGINARY, rb_node_imaginary_t, loc);
     n->val = val;
-    n->tminus = FALSE;
+    n->minus = FALSE;
     n->base = base;
     n->seen_point = seen_point;
     n->type = numeric_type;
@@ -14494,16 +14494,16 @@ negate_lit(struct parser_params *p, NODE* node)
 {
     switch (nd_type(node)) {
         case NODE_INTEGER:
-            RNODE_INTEGER(node)->tminus = TRUE;
+            RNODE_INTEGER(node)->minus = TRUE;
             break;
         case NODE_FLOAT:
-            RNODE_FLOAT(node)->tminus = TRUE;
+            RNODE_FLOAT(node)->minus = TRUE;
             break;
         case NODE_RATIONAL:
-            RNODE_RATIONAL(node)->tminus = TRUE;
+            RNODE_RATIONAL(node)->minus = TRUE;
             break;
         case NODE_IMAGINARY:
-            RNODE_IMAGINARY(node)->tminus = TRUE;
+            RNODE_IMAGINARY(node)->minus = TRUE;
             break;
     }
     return node;
