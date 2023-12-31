@@ -10349,7 +10349,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       case NODE_FLOAT: {
         VALUE lit = rb_compile_float_literal(RNODE_FLOAT(node));
-        debugp_param("lit", lit);
+        debugp_param("float", lit);
         if (!popped) {
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
@@ -10358,7 +10358,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       case NODE_RATIONAL: {
         VALUE lit = rb_compile_rational_literal(RNODE_RATIONAL(node));
-        debugp_param("lit", lit);
+        debugp_param("rational", lit);
         if (!popped) {
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
@@ -10367,7 +10367,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       case NODE_IMAGINARY: {
         VALUE lit = rb_compile_imaginary_literal(RNODE_IMAGINARY(node));
-        debugp_param("lit", lit);
+        debugp_param("imaginary", lit);
         if (!popped) {
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
