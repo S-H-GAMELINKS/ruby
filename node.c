@@ -182,16 +182,16 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
       case NODE_FILE:
         parser_string_free(ast, RNODE_FILE(node)->path);
       case NODE_INTEGER:
-        free(RNODE_INTEGER(node)->val);
+        xfree(RNODE_INTEGER(node)->val);
         break;
       case NODE_FLOAT:
-        free(RNODE_FLOAT(node)->val);
+        xfree(RNODE_FLOAT(node)->val);
         break;
       case NODE_RATIONAL:
-        free(RNODE_RATIONAL(node)->val);
+        xfree(RNODE_RATIONAL(node)->val);
         break;
       case NODE_IMAGINARY:
-        free(RNODE_IMAGINARY(node)->val);
+        xfree(RNODE_IMAGINARY(node)->val);
         break;
       default:
         break;
