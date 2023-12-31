@@ -9032,7 +9032,7 @@ set_number_literal(struct parser_params *p, enum yytokentype type, int suffix, i
             set_yylval_node(NEW_IMAGINARY(strdup(tok(p)), base, seen_point, numeric_type, &_cur_loc));
             break;
         default:
-            break;
+            rb_bug("unexpected token: %d", type);
     }
     SET_LEX_STATE(EXPR_END);
     return type;
