@@ -6660,6 +6660,10 @@ singleton	: var_ref
                           case NODE_LIT:
                           case NODE_LINE:
                           case NODE_FILE:
+                          case NODE_INTEGER:
+                          case NODE_FLOAT:
+                          case NODE_RATIONAL:
+                          case NODE_IMAGINARY:
                           case NODE_DSYM:
                           case NODE_LIST:
                           case NODE_ZLIST:
@@ -14109,6 +14113,10 @@ void_expr(struct parser_params *p, NODE *node)
       case NODE_LIT:
       case NODE_LINE:
       case NODE_FILE:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
       case NODE_STR:
       case NODE_DSTR:
       case NODE_DREGX:
@@ -14248,6 +14256,10 @@ is_static_content(NODE *node)
       case NODE_LIT:
       case NODE_LINE:
       case NODE_FILE:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
       case NODE_STR:
       case NODE_NIL:
       case NODE_TRUE:
@@ -14389,6 +14401,13 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         break;
 
       case NODE_LINE:
+        SWITCH_BY_COND_TYPE(type, warning, "");
+        break;
+
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
         SWITCH_BY_COND_TYPE(type, warning, "");
         break;
 
