@@ -14322,7 +14322,7 @@ range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 
     type = nd_type(node);
     value_expr(node);
-    if (type == NODE_LIT && FIXNUM_P(RNODE_LIT(node)->nd_lit)) {
+    if (type == NODE_INTEGER) {
         if (!e_option_supplied(p)) parser_warn(p, node, "integer literal in flip-flop");
         ID lineno = rb_intern("$.");
         return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(lineno, loc), loc), loc);
@@ -14813,8 +14813,60 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
                 RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
             }
         }
+        else if (nd_type_p(head, NODE_INTEGER) &&
+                 st_delete(literal_keys, (key = (st_data_t)rb_compile_integer_literal(RNODE_INTEGER(head)), &key), &data)) {
+            NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
+            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
+                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
+                            rb_compile_integer_literal(RNODE_INTEGER(head)), nd_line(head));
+            if (dup_value == last_expr) {
+                RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
+            }
+            else {
+                RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
+            }
+        }
+        else if (nd_type_p(head, NODE_FLOAT) &&
+                 st_delete(literal_keys, (key = (st_data_t)rb_compile_float_literal(RNODE_FLOAT(head)), &key), &data)) {
+            NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
+            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
+                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
+                            rb_compile_float_literal(RNODE_FLOAT(head)), nd_line(head));
+            if (dup_value == last_expr) {
+                RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
+            }
+            else {
+                RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
+            }
+        }
+        else if (nd_type_p(head, NODE_RATIONAL) &&
+                 st_delete(literal_keys, (key = (st_data_t)rb_compile_rational_literal(RNODE_RATIONAL(head)), &key), &data)) {
+            NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
+            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
+                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
+                            rb_compile_rational_literal(RNODE_RATIONAL(head)), nd_line(head));
+            if (dup_value == last_expr) {
+                RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
+            }
+            else {
+                RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
+            }
+        }
+        else if (nd_type_p(head, NODE_IMAGINARY) &&
+                 st_delete(literal_keys, (key = (st_data_t)rb_compile_imaginary_literal(RNODE_IMAGINARY(head)), &key), &data)) {
+            NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
+            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
+                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
+                            rb_compile_imaginary_literal(RNODE_IMAGINARY(head)), nd_line(head));
+            if (dup_value == last_expr) {
+                RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
+            }
+            else {
+                RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
+            }
+        }
         st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
-        last_expr = !head || nd_type_p(head, NODE_LIT) ? value : head;
+        last_expr = !head || (nd_type_p(head, NODE_LIT) || nd_type_p(head, NODE_INTEGER) || nd_type_p(head, NODE_FLOAT) || nd_type_p(head, NODE_RATIONAL) || nd_type_p(head, NODE_IMAGINARY)) ? value : head;
         hash = next;
     }
     st_foreach(literal_keys, append_literal_keys, (st_data_t)&result);
