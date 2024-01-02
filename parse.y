@@ -9004,11 +9004,7 @@ number_literal_suffix(struct parser_params *p, int mask)
 static enum yytokentype
 set_number_literal(struct parser_params *p, enum yytokentype type, int suffix, int base, int seen_point)
 {
-    enum rb_numeric_type numeric_type;
-
-    if (type == tINTEGER) {
-        numeric_type = integer_literal;
-    }
+    enum rb_numeric_type numeric_type = integer_literal;
 
     if (type == tFLOAT) {
         numeric_type = float_literal;

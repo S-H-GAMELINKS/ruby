@@ -40,10 +40,16 @@ compile_negative_numeric(VALUE val)
     return val;
 }
 
+static VALUE
+compile_numeric_literal(char* val, int base)
+{
+    return rb_cstr_to_inum(val, base, FALSE);
+}
+
 VALUE
 rb_compile_integer_literal(rb_node_integer_t* node)
 {
-    VALUE val = rb_cstr_to_inum(node->val, node->base, FALSE);
+    VALUE val = compile_numeric_literal(node->val, node->base);
     if (node->minus) {
         val = compile_negative_numeric(val);
     }
@@ -62,34 +68,36 @@ rb_compile_float_literal(rb_node_float_t* node)
 }
 
 static VALUE
-compile_rational_literal(char* val, int base, int seen_point)
+compile_rational_literal(char* node_val, int base, int seen_point)
 {
+    VALUE lit;
+    char* val = strdup(node_val);
     if (seen_point > 0) {
         int len = (int)(strlen(val));
         char *point = &val[seen_point];
         size_t fraclen = len-seen_point-1;
         memmove(point, point+1, fraclen+1);
 
-        return rb_rational_new(rb_cstr_to_inum(val, base, FALSE), rb_int_positive_pow(10, fraclen));
+        lit = rb_rational_new(compile_numeric_literal(val, base), rb_int_positive_pow(10, fraclen));
+    } else {
+        lit = rb_rational_raw1(compile_numeric_literal(val, base));
     }
-    return rb_rational_raw1(rb_cstr_to_inum(val, base, FALSE));
+
+    free(val);
+
+    return lit;
 }
 
 VALUE
 rb_compile_rational_literal(rb_node_rational_t* node)
 {
     VALUE lit;
-    char *val = strdup(node->val);
-    int base = node->base;
-    int seen_point = node->seen_point;
 
-    lit = compile_rational_literal(val, base, seen_point);
+    lit = compile_rational_literal(node->val, node->base, node->seen_point);
 
     if (node->minus) {
         lit = compile_negative_numeric(lit);
     }
-
-    free(val);
 
     return lit;
 }
@@ -103,7 +111,7 @@ rb_compile_imaginary_literal(rb_node_imaginary_t* node)
 
     switch (type) {
       case integer_literal:
-        lit = rb_cstr_to_inum(node->val, node->base, FALSE);
+        lit = compile_numeric_literal(node->val, node->base);
         break;
       case float_literal:{
         double d = strtod(node->val, 0);
