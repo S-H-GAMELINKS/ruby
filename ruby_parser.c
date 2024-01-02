@@ -54,10 +54,10 @@ VALUE
 rb_compile_float_literal(rb_node_float_t* node)
 {
     double d = strtod(node->val, 0);
-    VALUE val = DBL2NUM(d);
     if (node->minus) {
-        val = compile_negative_numeric(val);
+        d = -d;
     }
+    VALUE val = DBL2NUM(d);
     return val;
 }
 
@@ -102,19 +102,19 @@ rb_compile_imaginary_literal(rb_node_imaginary_t* node)
     enum rb_numeric_type type = node->type;
 
     switch (type) {
-        case integer_literal:
-            lit = rb_cstr_to_inum(node->val, node->base, FALSE);
-            break;
-        case float_literal: {
-            double d = strtod(node->val, 0);
-            lit = DBL2NUM(d);
-            break;
-        }
-        case rational_literal:
-            lit = compile_rational_literal(node->val, node->base, node->seen_point);
-            break;
-        default:
-            rb_bug("unreachable");
+      case integer_literal:
+        lit = rb_cstr_to_inum(node->val, node->base, FALSE);
+        break;
+      case float_literal:{
+        double d = strtod(node->val, 0);
+        lit = DBL2NUM(d);
+        break;
+      }
+      case rational_literal:
+        lit = compile_rational_literal(node->val, node->base, node->seen_point);
+        break;
+      default:
+        rb_bug("unreachable");
     }
 
     lit = rb_complex_raw(INT2FIX(0), lit);

@@ -14512,18 +14512,18 @@ static NODE*
 negate_lit(struct parser_params *p, NODE* node)
 {
     switch (nd_type(node)) {
-        case NODE_INTEGER:
-            RNODE_INTEGER(node)->minus = TRUE;
-            break;
-        case NODE_FLOAT:
-            RNODE_FLOAT(node)->minus = TRUE;
-            break;
-        case NODE_RATIONAL:
-            RNODE_RATIONAL(node)->minus = TRUE;
-            break;
-        case NODE_IMAGINARY:
-            RNODE_IMAGINARY(node)->minus = TRUE;
-            break;
+      case NODE_INTEGER:
+        RNODE_INTEGER(node)->minus = TRUE;
+        break;
+      case NODE_FLOAT:
+        RNODE_FLOAT(node)->minus = TRUE;
+        break;
+      case NODE_RATIONAL:
+        RNODE_RATIONAL(node)->minus = TRUE;
+        break;
+      case NODE_IMAGINARY:
+        RNODE_IMAGINARY(node)->minus = TRUE;
+        break;
     }
     return node;
 }
