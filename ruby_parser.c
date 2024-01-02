@@ -47,7 +47,7 @@ compile_numeric_literal(char* val, int base)
 }
 
 VALUE
-rb_compile_integer_literal(rb_node_integer_t* node)
+rb_node_integer_literal_val(rb_node_integer_t* node)
 {
     VALUE val = compile_numeric_literal(node->val, node->base);
     if (node->minus) {
@@ -57,7 +57,7 @@ rb_compile_integer_literal(rb_node_integer_t* node)
 }
 
 VALUE
-rb_compile_float_literal(rb_node_float_t* node)
+rb_node_float_literal_val(rb_node_float_t* node)
 {
     double d = strtod(node->val, 0);
     if (node->minus) {
@@ -89,7 +89,7 @@ compile_rational_literal(char* node_val, int base, int seen_point)
 }
 
 VALUE
-rb_compile_rational_literal(rb_node_rational_t* node)
+rb_node_rational_literal_val(rb_node_rational_t* node)
 {
     VALUE lit;
 
@@ -103,7 +103,7 @@ rb_compile_rational_literal(rb_node_rational_t* node)
 }
 
 VALUE
-rb_compile_imaginary_literal(rb_node_imaginary_t* node)
+rb_node_imaginary_literal_val(rb_node_imaginary_t* node)
 {
     VALUE lit;
 

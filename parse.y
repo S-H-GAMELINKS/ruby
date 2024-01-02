@@ -14810,11 +14810,11 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
             }
         }
         else if (nd_type_p(head, NODE_INTEGER) &&
-                 st_delete(literal_keys, (key = (st_data_t)rb_compile_integer_literal(RNODE_INTEGER(head)), &key), &data)) {
+                 st_delete(literal_keys, (key = (st_data_t)rb_node_integer_literal_val(RNODE_INTEGER(head)), &key), &data)) {
             NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
             rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
                             "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            rb_compile_integer_literal(RNODE_INTEGER(head)), nd_line(head));
+                            rb_node_integer_literal_val(RNODE_INTEGER(head)), nd_line(head));
             if (dup_value == last_expr) {
                 RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
             }
@@ -14823,11 +14823,11 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
             }
         }
         else if (nd_type_p(head, NODE_FLOAT) &&
-                 st_delete(literal_keys, (key = (st_data_t)rb_compile_float_literal(RNODE_FLOAT(head)), &key), &data)) {
+                 st_delete(literal_keys, (key = (st_data_t)rb_node_float_literal_val(RNODE_FLOAT(head)), &key), &data)) {
             NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
             rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
                             "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            rb_compile_float_literal(RNODE_FLOAT(head)), nd_line(head));
+                            rb_node_float_literal_val(RNODE_FLOAT(head)), nd_line(head));
             if (dup_value == last_expr) {
                 RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
             }
@@ -14836,11 +14836,11 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
             }
         }
         else if (nd_type_p(head, NODE_RATIONAL) &&
-                 st_delete(literal_keys, (key = (st_data_t)rb_compile_rational_literal(RNODE_RATIONAL(head)), &key), &data)) {
+                 st_delete(literal_keys, (key = (st_data_t)rb_node_rational_literal_val(RNODE_RATIONAL(head)), &key), &data)) {
             NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
             rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
                             "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            rb_compile_rational_literal(RNODE_RATIONAL(head)), nd_line(head));
+                            rb_node_rational_literal_val(RNODE_RATIONAL(head)), nd_line(head));
             if (dup_value == last_expr) {
                 RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
             }
@@ -14849,11 +14849,11 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
             }
         }
         else if (nd_type_p(head, NODE_IMAGINARY) &&
-                 st_delete(literal_keys, (key = (st_data_t)rb_compile_imaginary_literal(RNODE_IMAGINARY(head)), &key), &data)) {
+                 st_delete(literal_keys, (key = (st_data_t)rb_node_imaginary_literal_val(RNODE_IMAGINARY(head)), &key), &data)) {
             NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
             rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
                             "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            rb_compile_imaginary_literal(RNODE_IMAGINARY(head)), nd_line(head));
+                            rb_node_imaginary_literal_val(RNODE_IMAGINARY(head)), nd_line(head));
             if (dup_value == last_expr) {
                 RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
             }
