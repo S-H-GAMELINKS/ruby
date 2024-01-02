@@ -181,6 +181,7 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
     switch (nd_type(node)) {
       case NODE_FILE:
         parser_string_free(ast, RNODE_FILE(node)->path);
+        break;
       case NODE_INTEGER:
         xfree(RNODE_INTEGER(node)->val);
         break;
