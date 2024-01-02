@@ -7424,6 +7424,8 @@ goruby.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/bits.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/complex.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/gc.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/numeric.h
@@ -10066,6 +10068,8 @@ miniinit.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/bits.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/complex.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/numeric.h
