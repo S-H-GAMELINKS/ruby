@@ -5086,27 +5086,25 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
     switch (nd_type(node)) {
       case NODE_LIT: {
         VALUE v = RNODE_LIT(node)->nd_lit;
-        double ival;
-        if (RB_FLOAT_TYPE_P(v) &&
-            modf(RFLOAT_VALUE(v), &ival) == 0.0) {
-            return FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
-        }
-        if (RB_TYPE_P(v, T_RATIONAL) || RB_TYPE_P(v, T_COMPLEX)) {
-            return Qundef;
-        }
-        if (SYMBOL_P(v) || rb_obj_is_kind_of(v, rb_cNumeric)) {
+        if (SYMBOL_P(v)) {
             return v;
         }
         break;
       }
       case NODE_INTEGER:
         return rb_node_integer_literal_val(RNODE_INTEGER(node));
-      case NODE_FLOAT:
-        return rb_node_float_literal_val(RNODE_FLOAT(node));
+      case NODE_FLOAT: {
+        VALUE v = rb_node_float_literal_val(RNODE_FLOAT(node)); 
+        double ival;
+
+        if (modf(RFLOAT_VALUE(v), &ival) == 0.0) {
+            return FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
+        }
+        return v;
+      }
       case NODE_RATIONAL:
-        return rb_node_rational_literal_val(RNODE_RATIONAL(node));
       case NODE_IMAGINARY:
-        return rb_node_imaginary_literal_val(RNODE_IMAGINARY(node));
+        return Qundef;
       case NODE_NIL:
         return Qnil;
       case NODE_TRUE:
@@ -6326,13 +6324,7 @@ optimizable_range_item_p(const NODE *n)
       case NODE_LINE:
         return TRUE;
       case NODE_INTEGER:
-        return RB_INTEGER_TYPE_P(rb_node_integer_literal_val(RNODE_INTEGER(n)));
-      case NODE_FLOAT:
-        return RB_INTEGER_TYPE_P(rb_node_float_literal_val(RNODE_FLOAT(n)));
-      case NODE_RATIONAL:
-        return RB_INTEGER_TYPE_P(rb_node_rational_literal_val(RNODE_RATIONAL(n)));
-      case NODE_IMAGINARY:
-        return RB_INTEGER_TYPE_P(rb_node_imaginary_literal_val(RNODE_IMAGINARY(n)));
+        return TRUE;
       case NODE_NIL:
         return TRUE;
       default:

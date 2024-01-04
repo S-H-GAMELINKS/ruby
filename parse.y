@@ -13763,6 +13763,14 @@ shareable_literal_value(struct parser_params *p, NODE *node)
         return Qnil;
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
+      case NODE_INTEGER:
+        return rb_node_integer_literal_val(RNODE_INTEGER(node));
+      case NODE_FLOAT:
+        return rb_node_float_literal_val(RNODE_FLOAT(node));
+      case NODE_RATIONAL:
+        return rb_node_rational_literal_val(RNODE_RATIONAL(node));
+      case NODE_IMAGINARY:
+        return rb_node_imaginary_literal_val(RNODE_IMAGINARY(node));
       case NODE_LIT:
         return RNODE_LIT(node)->nd_lit;
       default:
