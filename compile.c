@@ -5094,7 +5094,7 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
       case NODE_INTEGER:
         return rb_node_integer_literal_val(RNODE_INTEGER(node));
       case NODE_FLOAT: {
-        VALUE v = rb_node_float_literal_val(RNODE_FLOAT(node)); 
+        VALUE v = rb_node_float_literal_val(RNODE_FLOAT(node));
         double ival;
 
         if (modf(RFLOAT_VALUE(v), &ival) == 0.0) {
