@@ -1960,6 +1960,9 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
               case NODE_IMAGINARY:
                 dv = rb_node_imaginary_literal_val(val_node);
                 break;
+              case NODE_ENCODING:
+                dv = rb_node_encoding_val(val_node);
+                break;
               case NODE_NIL:
                 dv = Qnil;
                 break;
@@ -4523,6 +4526,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
       case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
+      case NODE_ENCODING:
       case NODE_INTEGER:    /* NODE_INTEGER is always true */
       case NODE_FLOAT:      /* NODE_FLOAT is always true */
       case NODE_RATIONAL:   /* NODE_RATIONAL is always true */
@@ -4733,6 +4737,7 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq, bool hash_key)
       case NODE_LIT:
       case NODE_SYM:
       case NODE_LINE:
+      case NODE_ENCODING:
       case NODE_INTEGER:
       case NODE_FLOAT:
       case NODE_RATIONAL:
@@ -4771,6 +4776,8 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         return rb_node_sym_string_val(node);
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
+      case NODE_ENCODING:
+        return rb_node_encoding_val(node);
       case NODE_FILE:
       case NODE_STR:
         if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
@@ -5173,6 +5180,8 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         return rb_fstring(RNODE_STR(node)->nd_lit);
       case NODE_FILE:
         return rb_fstring(rb_node_file_path_val(node));
+      case NODE_ENCODING:
+        return rb_node_encoding_val(node);
     }
     return Qundef;
 }
@@ -5800,6 +5809,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
+      case NODE_ENCODING:
       case NODE_INTEGER:
       case NODE_FLOAT:
       case NODE_RATIONAL:
@@ -7228,6 +7238,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       case NODE_RATIONAL:
       case NODE_IMAGINARY:
       case NODE_FILE:
+      case NODE_ENCODING:
       case NODE_STR:
       case NODE_XSTR:
       case NODE_DSTR:
@@ -10320,6 +10331,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         if (!popped) {
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        break;
+      }
+      case NODE_ENCODING:{
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, rb_node_encoding_val(node));
         }
         break;
       }

@@ -74,6 +74,7 @@ enum lex_state_e {
 VALUE rb_node_sym_string_val(const NODE *);
 VALUE rb_node_line_lineno_val(const NODE *);
 VALUE rb_node_file_path_val(const NODE *);
+VALUE rb_node_encoding_val(const NODE *);
 
 VALUE rb_node_integer_literal_val(const NODE *);
 VALUE rb_node_float_literal_val(const NODE *);
