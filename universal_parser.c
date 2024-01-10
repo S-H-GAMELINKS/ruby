@@ -221,6 +221,8 @@ struct rb_imemo_tmpbuf_struct {
 #define NUM2INT             p->config->num2int
 #undef INT2NUM
 #define INT2NUM             p->config->int2num
+#undef FIX2LONG
+#define FIX2LONG            p->config->fix2long
 
 #define rb_stderr_tty_p    p->config->stderr_tty_p
 #define rb_write_error_str p->config->write_error_str

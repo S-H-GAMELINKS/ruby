@@ -1314,6 +1314,7 @@ typedef struct rb_parser_config_struct {
     /* Numeric */
     int (*num2int)(VALUE val);
     VALUE (*int2num)(int v);
+    long (*fix2long)(VALUE val);
 
     /* IO */
     int (*stderr_tty_p)(void);

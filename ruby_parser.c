@@ -708,6 +708,7 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->num2int          = rb_num2int_inline;
     config->int2num          = rb_int2num_inline;
+    config->fix2long         = rb_fix2long;
 
     config->stderr_tty_p    = rb_stderr_tty_p;
     config->write_error_str = rb_write_error_str;
