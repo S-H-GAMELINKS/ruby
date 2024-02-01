@@ -839,8 +839,12 @@ get_string_value(const NODE *node)
     switch (nd_type(node)) {
       case NODE_STR:
         return RNODE_STR(node)->nd_lit;
-      case NODE_FILE:
+      case NODE_FILE:{
+        if (RNODE_FILE(node)->shareable) {
+            return rb_fstring(rb_node_file_path_val(node));
+        }
         return rb_node_file_path_val(node);
+      }
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
@@ -10166,7 +10170,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_ZLIST:{
         if (!popped) {
-            ADD_INSN1(ret, node, newarray, INT2FIX(0));
+            if (RNODE_ZLIST(node)->shareable) {
+                VALUE lit = rb_ary_new();
+                OBJ_FREEZE_RAW(lit);
+                ADD_INSN1(ret, node, putobject, lit);
+            } else {
+                ADD_INSN1(ret, node, newarray, INT2FIX(0));
+            }
         }
         break;
       }

@@ -124,8 +124,6 @@ struct rb_imemo_tmpbuf_struct {
 #define RB_OBJ_FROZEN p->config->obj_frozen
 #undef RB_TYPE_P
 #define RB_TYPE_P p->config->type_p
-#undef OBJ_FREEZE_RAW
-#define OBJ_FREEZE_RAW p->config->obj_freeze_raw
 
 #undef FIXNUM_P
 #define FIXNUM_P p->config->fixnum_p

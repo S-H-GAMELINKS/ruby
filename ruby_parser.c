@@ -507,7 +507,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .obj_hide = rb_obj_hide,
     .obj_frozen = obj_frozen,
     .type_p = type_p,
-    .obj_freeze_raw = OBJ_FREEZE_RAW,
 
     .fixnum_p = fixnum_p,
     .symbol_p = symbol_p,
