@@ -442,12 +442,6 @@ arg_error(void)
     return rb_eArgError;
 }
 
-static VALUE
-ruby_vm_frozen_core(void)
-{
-    return rb_mRubyVMFrozenCore;
-}
-
 static int
 special_const_p(VALUE obj)
 {
@@ -481,7 +475,6 @@ str_coderange_scan_restartable(const char *s, const char *e, void *enc, int *cr)
 
 VALUE rb_io_gets_internal(VALUE io);
 extern VALUE rb_eArgError;
-extern VALUE rb_mRubyVMFrozenCore;
 VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
 static const rb_parser_config_t rb_global_parser_config = {
@@ -676,7 +669,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .qfalse = Qfalse,
     .qundef = Qundef,
     .eArgError = arg_error,
-    .mRubyVMFrozenCore = ruby_vm_frozen_core,
     .long2int = rb_long2int,
     .special_const_p = special_const_p,
     .builtin_type = builtin_type,
@@ -1042,4 +1034,12 @@ rb_node_const_decl_val(const NODE *node)
         path = rb_fstring(path);
     }
     return path;
+}
+
+extern VALUE rb_mRubyVMFrozenCore;
+
+VALUE
+rb_node_ruby_vm_frozen_core_val(const NODE *node)
+{
+    return rb_mRubyVMFrozenCore;
 }

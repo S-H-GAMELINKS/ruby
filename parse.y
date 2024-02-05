@@ -1275,6 +1275,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_LINE(loc) (NODE *)rb_node_line_new(p,loc)
 #define NEW_FILE(str,loc) (NODE *)rb_node_file_new(p,str,loc)
 #define NEW_ENCODING(loc) (NODE *)rb_node_encoding_new(p,loc)
+#define NEW_RUBY_VM_FROZEN_CORE(loc) (NODE *)rb_node_ruby_vm_frozen_core_new(p, loc)
 #define NEW_ERROR(loc) (NODE *)rb_node_error_new(p,loc)
 
 #endif
@@ -12604,6 +12605,14 @@ rb_node_encoding_new(struct parser_params *p, const YYLTYPE *loc)
     return n;
 }
 
+struct rb_node_ruby_vm_frozen_core_t *
+rb_node_ruby_vm_frozen_core_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_node_ruby_vm_frozen_core_t *n = NODE_NEWNODE(NODE_RUBY_VM_FROZEN_CORE, rb_node_ruby_vm_frozen_core_t, loc);
+    
+    return n;
+}
+
 static rb_node_cdecl_t *
 rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, const YYLTYPE *loc)
 {
@@ -14001,7 +14010,7 @@ const_decl_path(struct parser_params *p, NODE **dest)
 static NODE *
 make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTYPE *loc)
 {
-    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
+    NODE *fcore = NEW_RUBY_VM_FROZEN_CORE(loc);
 
     if (copy) {
         return NEW_CALL(fcore, rb_intern("make_shareable_copy"),
@@ -14016,7 +14025,7 @@ make_shareable_node(struct parser_params *p, NODE *value, bool copy, const YYLTY
 static NODE *
 ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const YYLTYPE *loc)
 {
-    NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
+    NODE *fcore = NEW_RUBY_VM_FROZEN_CORE(loc);
     NODE *args = NEW_LIST(value, loc);
     args = list_append(p, args, const_decl_path(p, dest));
     return NEW_CALL(fcore, rb_intern("ensure_shareable"), args, loc);

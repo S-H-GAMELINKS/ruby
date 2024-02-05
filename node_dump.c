@@ -1164,6 +1164,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
       case NODE_RIPPER:
       case NODE_RIPPER_VALUES:
       case NODE_LAST:
+      case NODE_RUBY_VM_FROZEN_CORE:
         break;
     }
 
