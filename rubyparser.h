@@ -1415,10 +1415,6 @@ typedef struct rb_parser_config_struct {
     int (*undef_p)(VALUE);
     int (*rtest)(VALUE obj);
     int (*nil_p)(VALUE obj);
-    VALUE qnil;
-    VALUE qtrue;
-    VALUE qfalse;
-    VALUE qundef;
     VALUE (*eArgError)(void);
     VALUE (*mRubyVMFrozenCore)(void);
     int (*long2int)(long);

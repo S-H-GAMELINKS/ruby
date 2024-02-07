@@ -48,7 +48,6 @@ init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head, void *x
 
 #ifdef UNIVERSAL_PARSER
 #define ruby_xmalloc config->malloc
-#define Qnil config->qnil
 #endif
 
 #ifdef UNIVERSAL_PARSER
@@ -88,9 +87,6 @@ rb_node_buffer_new(void)
 #define rb_gc_mark ast->node_buffer->config->gc_mark
 #define rb_gc_location ast->node_buffer->config->gc_location
 #define rb_gc_mark_movable ast->node_buffer->config->gc_mark_movable
-#undef Qnil
-#define Qnil ast->node_buffer->config->qnil
-#define Qtrue ast->node_buffer->config->qtrue
 #define NIL_P ast->node_buffer->config->nil_p
 #define rb_hash_aset ast->node_buffer->config->hash_aset
 #define rb_hash_delete ast->node_buffer->config->hash_delete
