@@ -12609,7 +12609,7 @@ struct rb_node_ruby_vm_frozen_core_t *
 rb_node_ruby_vm_frozen_core_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_ruby_vm_frozen_core_t *n = NODE_NEWNODE(NODE_RUBY_VM_FROZEN_CORE, rb_node_ruby_vm_frozen_core_t, loc);
-    
+
     return n;
 }
 

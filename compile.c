@@ -10298,7 +10298,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
         }
-        break;      
+        break;
       }
       case NODE_INTEGER:{
         VALUE lit = rb_node_integer_literal_val(node);
