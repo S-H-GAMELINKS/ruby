@@ -231,9 +231,6 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
 
-#define literal_cmp  p->config->literal_cmp
-#define literal_hash p->config->literal_hash
-
 #define rb_syntax_error_append p->config->syntax_error_append
 #define rb_raise p->config->raise
 #define syntax_error_new p->config->syntax_error_new

@@ -1350,10 +1350,6 @@ typedef struct rb_parser_config_struct {
     // int rb_dvar_defined(ID id, const rb_iseq_t *iseq);
     int (*dvar_defined)(ID, const void*);
 
-    /* Compile (parse.y) */
-    int (*literal_cmp)(VALUE val, VALUE lit);
-    parser_st_index_t (*literal_hash)(VALUE a);
-
     /* Error (Exception) */
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
     VALUE (*syntax_error_append)(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);

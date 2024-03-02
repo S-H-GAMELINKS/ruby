@@ -93,32 +93,6 @@ dvar_defined(ID id, const void *p)
     return rb_dvar_defined(id, (const rb_iseq_t *)p);
 }
 
-static bool
-hash_literal_key_p(VALUE k)
-{
-    switch (OBJ_BUILTIN_TYPE(k)) {
-      case T_NODE:
-        return false;
-      default:
-        return true;
-    }
-}
-
-static int
-literal_cmp(VALUE val, VALUE lit)
-{
-    if (val == lit) return 0;
-    if (!hash_literal_key_p(val) || !hash_literal_key_p(lit)) return -1;
-    return rb_iseq_cdhash_cmp(val, lit);
-}
-
-static st_index_t
-literal_hash(VALUE a)
-{
-    if (!hash_literal_key_p(a)) return (st_index_t)a;
-    return rb_iseq_cdhash_hash(a);
-}
-
 static int
 is_usascii_enc(void *enc)
 {
@@ -602,9 +576,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .local_defined = local_defined,
     .dvar_defined = dvar_defined,
 
-    .literal_cmp = literal_cmp,
-    .literal_hash = literal_hash,
-
     .syntax_error_append = syntax_error_append,
     .raise = rb_raise,
     .syntax_error_new = syntax_error_new,
@@ -1065,4 +1036,192 @@ rb_node_const_decl_val(const NODE *node)
   end:
     path = rb_fstring(path);
     return path;
+}
+
+# define PARSER_ENC_STRING_GETMEM(str, ptrvar, lenvar, encvar) \
+    ((ptrvar) = str->ptr,                            \
+     (lenvar) = str->len,                            \
+     (encvar) = str->enc)
+
+static int
+rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
+{
+    long len1, len2;
+    const char *ptr1, *ptr2;
+    rb_encoding *enc1, *enc2;
+
+    PARSER_ENC_STRING_GETMEM(str1, ptr1, len1, enc1);
+    PARSER_ENC_STRING_GETMEM(str2, ptr2, len2, enc2);
+
+    return (len1 != len2 ||
+            enc1 != enc2 ||
+            memcmp(ptr1, ptr2, len1) != 0);
+}
+
+static int
+node_integer_cmp(rb_node_integer_t *n1, rb_node_integer_t *n2)
+{
+    return (n1->minus != n2->minus ||
+            n1->base != n2->base ||
+            strcmp(n1->val, n2->val));
+}
+
+static int
+node_float_cmp(rb_node_float_t *n1, rb_node_float_t *n2)
+{
+    return (n1->minus != n2->minus ||
+            strcmp(n1->val, n2->val));
+}
+
+static int
+node_rational_cmp(rb_node_rational_t *n1, rb_node_rational_t *n2)
+{
+    return (n1->minus != n2->minus ||
+            n1->base != n2->base ||
+            n1->seen_point != n2->seen_point ||
+            strcmp(n1->val, n2->val));
+}
+
+static int
+node_imaginary_cmp(rb_node_imaginary_t *n1, rb_node_imaginary_t *n2)
+{
+    return (n1->minus != n2->minus ||
+            n1->base != n2->base ||
+            n1->seen_point != n2->seen_point ||
+            n1->type != n2->type ||
+            strcmp(n1->val, n2->val));
+}
+
+static int
+rb_parser_regx_hash_cmp(rb_node_regx_t *n1, rb_node_regx_t *n2)
+{
+    return (n1->options != n2->options ||
+            rb_parser_string_hash_cmp(n1->string, n2->string));
+}
+
+static int
+node_integer_line_cmp(const NODE *node_i, const NODE *line)
+{
+    VALUE num = rb_node_integer_literal_val(node_i);
+
+    return !(FIXNUM_P(num) && line->nd_loc.beg_pos.lineno == FIX2INT(num));
+}
+
+int
+rb_parser_literal_cmp(st_data_t val, st_data_t lit)
+{
+    if (val == lit) return 0;
+
+    NODE *node_val = RNODE(val);
+    NODE *node_lit = RNODE(lit);
+    enum node_type type_val = nd_type(node_val);
+    enum node_type type_lit = nd_type(node_lit);
+
+    if (type_val == NODE_INTEGER && type_lit == NODE_LINE) {
+        return node_integer_line_cmp(node_val, node_lit);
+    }
+    if (type_lit == NODE_INTEGER && type_val == NODE_LINE) {
+        return node_integer_line_cmp(node_lit, node_val);
+    }
+
+    /* Special case for String and __FILE__ */
+    if (type_val == NODE_STR && type_lit == NODE_FILE) {
+        return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_FILE(node_lit)->path);
+    }
+    if (type_lit == NODE_STR && type_val == NODE_FILE) {
+        return rb_parser_string_hash_cmp(RNODE_STR(node_lit)->string, RNODE_FILE(node_val)->path);
+    }
+
+    if (type_val != type_lit) {
+        return -1;
+    }
+
+    switch (type_lit) {
+      case NODE_INTEGER:
+        return node_integer_cmp(RNODE_INTEGER(node_val), RNODE_INTEGER(node_lit));
+      case NODE_FLOAT:
+        return node_float_cmp(RNODE_FLOAT(node_val), RNODE_FLOAT(node_lit));
+      case NODE_RATIONAL:
+        return node_rational_cmp(RNODE_RATIONAL(node_val), RNODE_RATIONAL(node_lit));
+      case NODE_IMAGINARY:
+        return node_imaginary_cmp(RNODE_IMAGINARY(node_val), RNODE_IMAGINARY(node_lit));
+      case NODE_STR:
+        return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_STR(node_lit)->string);
+      case NODE_SYM:
+        return rb_parser_string_hash_cmp(RNODE_SYM(node_val)->string, RNODE_SYM(node_lit)->string);
+      case NODE_REGX:
+        return rb_parser_regx_hash_cmp(RNODE_REGX(node_val), RNODE_REGX(node_lit));
+      case NODE_LINE:
+        return node_val->nd_loc.beg_pos.lineno != node_lit->nd_loc.beg_pos.lineno;
+      case NODE_FILE:
+        return rb_parser_string_hash_cmp(RNODE_FILE(node_val)->path, RNODE_FILE(node_lit)->path);
+      case NODE_ENCODING:
+        return RNODE_ENCODING(node_val)->enc != RNODE_ENCODING(node_lit)->enc;
+      default:
+        rb_bug("unexpected node: %s, %s", ruby_node_name(type_val), ruby_node_name(type_lit));
+    }
+}
+
+static st_index_t
+djb2(const uint8_t *str, size_t len)
+{
+    st_index_t hash = 5381;
+
+    for (size_t i = 0; i < len; i++) {
+        hash = ((hash << 5) + hash) + str[i];
+    }
+
+    return hash;
+}
+
+static st_index_t
+parser_memhash(const void *ptr, long len)
+{
+    return djb2(ptr, len);
+}
+
+static st_index_t
+rb_parser_str_hash(rb_parser_string_t *str)
+{
+    return parser_memhash((const void *)str->ptr, str->len);
+}
+
+st_index_t
+rb_parser_literal_hash(st_data_t a)
+{
+    NODE *node = (NODE *)a;
+    VALUE val;
+    enum node_type type = nd_type(node);
+
+    switch (type) {
+      case NODE_INTEGER:
+        val = rb_node_integer_literal_val(node);
+        if (!FIXNUM_P(val)) val = rb_big_hash(val);
+        return FIX2LONG(val);
+      case NODE_FLOAT:
+        val = rb_node_float_literal_val(node);
+        return rb_dbl_long_hash(RFLOAT_VALUE(val));
+      case NODE_RATIONAL:
+        val = rb_node_rational_literal_val(node);
+        return rb_rational_hash(val);
+      case NODE_IMAGINARY:
+        val = rb_node_imaginary_literal_val(node);
+        return rb_complex_hash(val);
+      case NODE_STR:
+        return rb_parser_str_hash(RNODE_STR(node)->string);
+      case NODE_SYM:
+        return rb_parser_str_hash(RNODE_SYM(node)->string);
+      case NODE_REGX:
+        return rb_parser_str_hash(RNODE_REGX(node)->string);
+      case NODE_LINE:
+        /* Same with NODE_INTEGER FIXNUM case */
+        return (st_index_t)node->nd_loc.beg_pos.lineno;
+      case NODE_FILE:
+        /* Same with NODE_STR */
+        return rb_parser_str_hash(RNODE_FILE(node)->path);
+      case NODE_ENCODING:
+        return (st_index_t)RNODE_ENCODING(node)->enc;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(type));
+    }
 }

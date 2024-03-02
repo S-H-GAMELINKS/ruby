@@ -34,6 +34,9 @@ VALUE rb_node_integer_literal_val(const NODE *);
 VALUE rb_node_float_literal_val(const NODE *);
 VALUE rb_node_rational_literal_val(const NODE *);
 VALUE rb_node_imaginary_literal_val(const NODE *);
+
+int rb_parser_literal_cmp(st_data_t val, st_data_t lit);
+st_index_t rb_parser_literal_hash(st_data_t);
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_parser_end_seen_p(VALUE);
