@@ -74,155 +74,6 @@
 #include "symbol.h"
 
 #ifndef RIPPER
-static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
-
-static int
-node_integer_cmp(rb_node_integer_t *n1, rb_node_integer_t *n2)
-{
-    return (n1->minus != n2->minus ||
-            n1->base != n2->base ||
-            strcmp(n1->val, n2->val));
-}
-
-static int
-node_float_cmp(rb_node_float_t *n1, rb_node_float_t *n2)
-{
-    return (n1->minus != n2->minus ||
-            strcmp(n1->val, n2->val));
-}
-
-static int
-node_rational_cmp(rb_node_rational_t *n1, rb_node_rational_t *n2)
-{
-    return (n1->minus != n2->minus ||
-            n1->base != n2->base ||
-            n1->seen_point != n2->seen_point ||
-            strcmp(n1->val, n2->val));
-}
-
-static int
-node_imaginary_cmp(rb_node_imaginary_t *n1, rb_node_imaginary_t *n2)
-{
-    return (n1->minus != n2->minus ||
-            n1->base != n2->base ||
-            n1->seen_point != n2->seen_point ||
-            n1->type != n2->type ||
-            strcmp(n1->val, n2->val));
-}
-
-static int
-rb_parser_regx_hash_cmp(rb_node_regx_t *n1, rb_node_regx_t *n2)
-{
-    return (n1->options != n2->options ||
-            rb_parser_string_hash_cmp(n1->string, n2->string));
-}
-
-static int
-node_integer_line_cmp(const NODE *node_i, const NODE *line)
-{
-    VALUE num = rb_node_integer_literal_val(node_i);
-
-    return !(FIXNUM_P(num) && line->nd_loc.beg_pos.lineno == FIX2INT(num));
-}
-
-static st_index_t rb_parser_str_hash(rb_parser_string_t *str);
-
-static int
-literal_cmp(st_data_t val, st_data_t lit)
-{
-    if (val == lit) return 0;
-
-    NODE *node_val = RNODE(val);
-    NODE *node_lit = RNODE(lit);
-    enum node_type type_val = nd_type(node_val);
-    enum node_type type_lit = nd_type(node_lit);
-
-    /* Special case for Integer and __LINE__ */
-    if (type_val == NODE_INTEGER && type_lit == NODE_LINE) {
-        return node_integer_line_cmp(node_val, node_lit);
-    }
-    if (type_lit == NODE_INTEGER && type_val == NODE_LINE) {
-        return node_integer_line_cmp(node_lit, node_val);
-    }
-
-    /* Special case for String and __FILE__ */
-    if (type_val == NODE_STR && type_lit == NODE_FILE) {
-        return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_FILE(node_lit)->path);
-    }
-    if (type_lit == NODE_STR && type_val == NODE_FILE) {
-        return rb_parser_string_hash_cmp(RNODE_STR(node_lit)->string, RNODE_FILE(node_val)->path);
-    }
-
-    if (type_val != type_lit) {
-        return -1;
-    }
-
-    switch (type_lit) {
-      case NODE_INTEGER:
-        return node_integer_cmp(RNODE_INTEGER(node_val), RNODE_INTEGER(node_lit));
-      case NODE_FLOAT:
-        return node_float_cmp(RNODE_FLOAT(node_val), RNODE_FLOAT(node_lit));
-      case NODE_RATIONAL:
-        return node_rational_cmp(RNODE_RATIONAL(node_val), RNODE_RATIONAL(node_lit));
-      case NODE_IMAGINARY:
-        return node_imaginary_cmp(RNODE_IMAGINARY(node_val), RNODE_IMAGINARY(node_lit));
-      case NODE_STR:
-        return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_STR(node_lit)->string);
-      case NODE_SYM:
-        return rb_parser_string_hash_cmp(RNODE_SYM(node_val)->string, RNODE_SYM(node_lit)->string);
-      case NODE_REGX:
-        return rb_parser_regx_hash_cmp(RNODE_REGX(node_val), RNODE_REGX(node_lit));
-      case NODE_LINE:
-        return node_val->nd_loc.beg_pos.lineno != node_lit->nd_loc.beg_pos.lineno;
-      case NODE_FILE:
-        return rb_parser_string_hash_cmp(RNODE_FILE(node_val)->path, RNODE_FILE(node_lit)->path);
-      case NODE_ENCODING:
-        return RNODE_ENCODING(node_val)->enc != RNODE_ENCODING(node_lit)->enc;
-      default:
-        rb_bug("unexpected node: %s, %s", ruby_node_name(type_val), ruby_node_name(type_lit));
-    }
-}
-
-static st_index_t
-literal_hash(st_data_t a)
-{
-    NODE *node = (NODE *)a;
-    VALUE val;
-    enum node_type type = nd_type(node);
-
-    switch (type) {
-      case NODE_INTEGER:
-        val = rb_node_integer_literal_val(node);
-        if (!FIXNUM_P(val)) val = rb_big_hash(val);
-        return FIX2LONG(val);
-      case NODE_FLOAT:
-        val = rb_node_float_literal_val(node);
-        return rb_dbl_long_hash(RFLOAT_VALUE(val));
-      case NODE_RATIONAL:
-        val = rb_node_rational_literal_val(node);
-        return rb_rational_hash(val);
-      case NODE_IMAGINARY:
-        val = rb_node_imaginary_literal_val(node);
-        return rb_complex_hash(val);
-      case NODE_STR:
-        return rb_parser_str_hash(RNODE_STR(node)->string);
-      case NODE_SYM:
-        return rb_parser_str_hash(RNODE_SYM(node)->string);
-      case NODE_REGX:
-        return rb_parser_str_hash(RNODE_REGX(node)->string);
-      case NODE_LINE:
-        /* Same with NODE_INTEGER FIXNUM case */
-        return (st_index_t)node->nd_loc.beg_pos.lineno;
-      case NODE_FILE:
-        /* Same with NODE_STR */
-        return rb_parser_str_hash(RNODE_FILE(node)->path);
-      case NODE_ENCODING:
-        return (st_index_t)RNODE_ENCODING(node)->enc;
-      default:
-        rb_bug("unexpected node: %s", ruby_node_name(type));
-    }
-}
-
 static VALUE
 syntax_error_new(void)
 {
@@ -2078,28 +1929,6 @@ get_nd_args(struct parser_params *p, NODE *node)
     }
 }
 
-#ifndef RIPPER
-#ifndef UNIVERSAL_PARSER
-static st_index_t
-djb2(const uint8_t *str, size_t len)
-{
-    st_index_t hash = 5381;
-
-    for (size_t i = 0; i < len; i++) {
-        hash = ((hash << 5) + hash) + str[i];
-    }
-
-    return hash;
-}
-
-static st_index_t
-parser_memhash(const void *ptr, long len)
-{
-    return djb2(ptr, len);
-}
-#endif
-#endif
-
 #define PARSER_STRING_PTR(str) (str->ptr)
 #define PARSER_STRING_LEN(str) (str->len)
 #define STRING_SIZE(str) ((size_t)str->len + 1)
@@ -2161,16 +1990,6 @@ rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str)
     xfree(PARSER_STRING_PTR(str));
     xfree(str);
 }
-
-#ifndef RIPPER
-#ifndef UNIVERSAL_PARSER
-static st_index_t
-rb_parser_str_hash(rb_parser_string_t *str)
-{
-    return parser_memhash((const void *)PARSER_STRING_PTR(str), PARSER_STRING_LEN(str));
-}
-#endif
-#endif
 
 static size_t
 rb_parser_str_capacity(rb_parser_string_t *str, const int termlen)
@@ -2566,29 +2385,6 @@ rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
     return str;
 }
 
-#ifndef UNIVERSAL_PARSER
-#ifndef RIPPER
-# define PARSER_ENC_STRING_GETMEM(str, ptrvar, lenvar, encvar) \
-    ((ptrvar) = str->ptr,                            \
-     (lenvar) = str->len,                            \
-     (encvar) = str->enc)
-
-static int
-rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
-{
-    long len1, len2;
-    const char *ptr1, *ptr2;
-    rb_encoding *enc1, *enc2;
-
-    PARSER_ENC_STRING_GETMEM(str1, ptr1, len1, enc1);
-    PARSER_ENC_STRING_GETMEM(str2, ptr2, len2, enc2);
-
-    return (len1 != len2 ||
-            enc1 != enc2 ||
-            memcmp(ptr1, ptr2, len1) != 0);
-}
-#endif
-#endif
 %}
 
 %expect 0
@@ -15073,13 +14869,11 @@ nd_value(struct parser_params *p, NODE *node)
 void
 rb_parser_warn_duplicate_keys(struct parser_params *p, NODE *hash)
 {
+#define literal_hash rb_parser_literal_hash
+#define literal_cmp rb_parser_literal_cmp
+
 #ifndef UNIVERSAL_PARSER
     static const
-#else
-#undef literal_hash
-#define literal_hash rb_parser_literal_hash
-#undef literal_cmp
-#define literal_cmp rb_parser_literal_cmp
 #endif
     struct st_hash_type literal_type = {
         literal_cmp,

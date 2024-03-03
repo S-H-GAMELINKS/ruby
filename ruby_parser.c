@@ -5,6 +5,7 @@
 
 #include "node.h"
 #include "rubyparser.h"
+#include "internal/hash.h"
 #include "internal/error.h"
 
 #ifdef UNIVERSAL_PARSER
@@ -16,7 +17,6 @@
 #include "internal/complex.h"
 #include "internal/encoding.h"
 #include "internal/gc.h"
-#include "internal/hash.h"
 #include "internal/io.h"
 #include "internal/parse.h"
 #include "internal/rational.h"
