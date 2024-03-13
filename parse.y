@@ -595,9 +595,6 @@ struct parser_params {
     NODE *eval_tree;
     const struct rb_iseq_struct *parent_iseq;
 
-#ifdef UNIVERSAL_PARSER
-    const rb_parser_config_t *config;
-#endif
     /* compile_option */
     signed int frozen_string_literal:2; /* -1: not specified, 0: false, 1: true */
 
@@ -613,6 +610,10 @@ struct parser_params {
 # endif
     unsigned int error_p: 1;
     unsigned int cr_seen: 1;
+
+#ifdef UNIVERSAL_PARSER
+    const rb_parser_config_t *config;
+#endif
 
 #ifndef RIPPER
     /* Ruby core only */
