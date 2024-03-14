@@ -16588,6 +16588,17 @@ rb_ruby_ripper_parser_allocate(void)
 {
     return (struct parser_params *)ruby_xcalloc(1, sizeof(struct parser_params));
 }
+
+#ifdef UNIVERSAL_PARSER
+rb_parser_t *
+rb_ripper_parser_allocate(const rb_parser_config_t *config)
+{
+    /* parser_initialize expects fields to be set to 0 */
+    rb_parser_t *p = (rb_parser_t *)config->calloc(1, sizeof(rb_parser_t));
+    p->config = config;
+    return p;
+}
+#endif
 #endif /* RIPPER */
 
 #ifndef RIPPER

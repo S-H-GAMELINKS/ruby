@@ -686,6 +686,12 @@ static const rb_parser_config_t rb_global_parser_config = {
 };
 
 rb_parser_t *
+rb_ripper_parser_params_allocate(rb_parser_t* (allocate_func)(const rb_parser_config_t *))
+{
+    return allocate_func(&rb_global_parser_config);
+}
+
+rb_parser_t *
 rb_parser_params_allocate(void)
 {
     return rb_ruby_parser_allocate(&rb_global_parser_config);
