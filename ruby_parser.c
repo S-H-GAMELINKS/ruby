@@ -685,6 +685,12 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_coderange_scan_restartable = str_coderange_scan_restartable,
 };
 
+const rb_parser_config_t *
+rb_parser_config(void)
+{
+    return &rb_global_parser_config;
+}
+
 rb_parser_t *
 rb_parser_params_allocate(void)
 {
@@ -919,6 +925,7 @@ VALUE
 rb_node_integer_literal_val(const NODE *n)
 {
     const rb_node_integer_t *node = RNODE_INTEGER(n);
+        const rb_parser_config_t *conf = rb_parser_config();
     VALUE val = integer_value(node->val, node->base);
     if (node->minus) {
         val = negative_numeric(val);

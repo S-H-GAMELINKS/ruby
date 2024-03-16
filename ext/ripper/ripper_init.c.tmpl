@@ -94,7 +94,7 @@ ripper_s_allocate(VALUE klass)
                                        &parser_data_type, r);
 
 #ifdef UNIVERSAL_PARSER
-    r->p = rb_parser_params_allocate();
+    r->p = rb_ripper_parser_params_allocate();
 #else
     r->p = rb_ruby_ripper_parser_allocate();
 #endif

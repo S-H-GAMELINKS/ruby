@@ -16583,11 +16583,22 @@ rb_ruby_ripper_lex_state_name(struct parser_params *p, int state)
     return rb_parser_lex_state_name(p, (enum lex_state_e)state);
 }
 
+#ifdef UNIVERSAL_PARSER
+rb_parser_t *
+rb_ripper_parser_params_allocate(void)
+{
+    const rb_parser_config_t *config = rb_parser_config();
+    rb_parser_t *p = (rb_parser_t *)config->calloc(1, sizeof(rb_parser_t));
+    p->config = config;
+    return p;
+}
+#else
 struct parser_params*
 rb_ruby_ripper_parser_allocate(void)
 {
     return (struct parser_params *)ruby_xcalloc(1, sizeof(struct parser_params));
 }
+#endif
 #endif /* RIPPER */
 
 #ifndef RIPPER

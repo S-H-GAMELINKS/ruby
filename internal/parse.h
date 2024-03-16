@@ -105,7 +105,12 @@ long rb_ruby_ripper_column(rb_parser_t *p);
 long rb_ruby_ripper_token_len(rb_parser_t *p);
 rb_parser_string_t *rb_ruby_ripper_lex_lastline(rb_parser_t *p);
 VALUE rb_ruby_ripper_lex_state_name(struct parser_params *p, int state);
+#ifdef UNIVERSAL_PARSER
+// const rb_parser_config_t *rb_parser_config(void);
+rb_parser_t *rb_ripper_parser_params_allocate(void);
+#else
 struct parser_params *rb_ruby_ripper_parser_allocate(void);
+#endif
 #endif
 
 #ifdef UNIVERSAL_PARSER
