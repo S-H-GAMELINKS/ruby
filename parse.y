@@ -14050,8 +14050,7 @@ const_decl_path(struct parser_params *p, NODE *dest)
     if (!nd_type_p(dest, NODE_CALL)) {
         const YYLTYPE *loc = &dest->nd_loc;
         VALUE path = rb_node_const_decl_val(dest);
-        n = NEW_LIT(path, loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
+        n = NEW_STR(rb_str_to_parser_string(p, path), loc);
     }
     return n;
 }
