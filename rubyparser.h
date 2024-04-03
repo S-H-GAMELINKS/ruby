@@ -566,6 +566,8 @@ typedef struct RNode_LIST {
 
 typedef struct RNode_ZLIST {
     NODE node;
+
+    int constant_shareable;
 } rb_node_zlist_t;
 
 typedef struct RNode_VALUES {
@@ -717,6 +719,7 @@ typedef struct RNode_STR {
     NODE node;
 
     struct rb_parser_string *string;
+    int constant_shareable;
 } rb_node_str_t;
 
 /* RNode_DSTR, RNode_DXSTR and RNode_DSYM should be same structure */
@@ -1050,6 +1053,7 @@ typedef struct RNode_FILE {
     NODE node;
 
     struct rb_parser_string *path;
+    int constant_shareable;
 } rb_node_file_t;
 
 typedef struct RNode_ENCODING {
@@ -1250,7 +1254,6 @@ typedef struct rb_parser_config_struct {
     /* Object */
     VALUE (*obj_freeze)(VALUE obj);
     VALUE (*obj_hide)(VALUE obj);
-    void (*obj_freeze_raw)(VALUE obj);
 
     int (*fixnum_p)(VALUE);
     int (*symbol_p)(VALUE);

@@ -90,8 +90,6 @@
 
 #define rb_obj_freeze p->config->obj_freeze
 #define rb_obj_hide p->config->obj_hide
-#undef OBJ_FREEZE_RAW
-#define OBJ_FREEZE_RAW p->config->obj_freeze_raw
 
 #undef FIXNUM_P
 #define FIXNUM_P p->config->fixnum_p

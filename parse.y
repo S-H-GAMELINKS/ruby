@@ -12041,6 +12041,7 @@ static rb_node_zlist_t *
 rb_node_zlist_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_zlist_t *n = NODE_NEWNODE(NODE_ZLIST, rb_node_zlist_t, loc);
+    n->constant_shareable = FALSE;
 
     return n;
 }
@@ -12293,6 +12294,7 @@ rb_node_str_new(struct parser_params *p, rb_parser_string_t *string, const YYLTY
 {
     rb_node_str_t *n = NODE_NEWNODE(NODE_STR, rb_node_str_t, loc);
     n->string = string;
+    n->constant_shareable = FALSE;
 
     return n;
 }
@@ -12638,6 +12640,7 @@ rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc)
 {
     rb_node_file_t *n = NODE_NEWNODE(NODE_FILE, rb_node_file_t, loc);
     n->path = rb_str_to_parser_string(p, str);
+    n->constant_shareable = FALSE;
 
     return n;
 }
@@ -14118,23 +14121,16 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
         return value;
 
       case NODE_STR:
-        lit = rb_str_to_interned_str(rb_node_str_string_val(value));
-        value = NEW_LIT(lit, loc);
-        RB_OBJ_WRITE(p->ast, &RNODE_LIT(value)->nd_lit, lit);
+        RNODE_STR(value)->constant_shareable = TRUE;
         return value;
 
       case NODE_FILE:
-        lit = rb_str_to_interned_str(rb_node_file_path_val(value));
-        value = NEW_LIT(lit, loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(value)->nd_lit);
+        RNODE_FILE(value)->constant_shareable = TRUE;
         return value;
 
       case NODE_ZLIST:
-        lit = rb_ary_new();
-        OBJ_FREEZE_RAW(lit);
-        NODE *n = NEW_LIT(lit, loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
-        return n;
+        RNODE_ZLIST(value)->constant_shareable = TRUE;
+        return value;
 
       case NODE_LIST:
         lit = rb_ary_new();
