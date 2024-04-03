@@ -1045,3 +1045,38 @@ rb_node_const_decl_val(const NODE *node)
     path = rb_fstring(path);
     return path;
 }
+
+VALUE
+rb_shareable_literal_value(const NODE *node)
+{
+    if (!node) return Qnil;
+    enum node_type type = nd_type(node);
+    switch (type) {
+      case NODE_TRUE:
+        return Qtrue;
+      case NODE_FALSE:
+        return Qfalse;
+      case NODE_NIL:
+        return Qnil;
+      case NODE_SYM:
+        return rb_node_sym_string_val(node);
+      case NODE_LINE:
+        return rb_node_line_lineno_val(node);
+      case NODE_INTEGER:
+        return rb_node_integer_literal_val(node);
+      case NODE_FLOAT:
+        return rb_node_float_literal_val(node);
+      case NODE_RATIONAL:
+        return rb_node_rational_literal_val(node);
+      case NODE_IMAGINARY:
+        return rb_node_imaginary_literal_val(node);
+      case NODE_ENCODING:
+        return rb_node_encoding_val(node);
+      case NODE_REGX:
+        return rb_node_regx_string_val(node);
+      case NODE_LIT:
+        return RNODE_LIT(node)->nd_lit;
+      default:
+        return Qundef;
+    }
+}

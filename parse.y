@@ -14081,40 +14081,6 @@ ensure_shareable_node(struct parser_params *p, NODE *dest, NODE *value, const YY
 
 static int is_static_content(NODE *node);
 
-static VALUE
-shareable_literal_value(struct parser_params *p, NODE *node)
-{
-    if (!node) return Qnil;
-    enum node_type type = nd_type(node);
-    switch (type) {
-      case NODE_TRUE:
-        return Qtrue;
-      case NODE_FALSE:
-        return Qfalse;
-      case NODE_NIL:
-        return Qnil;
-      case NODE_SYM:
-        return rb_node_sym_string_val(node);
-      case NODE_LINE:
-        return rb_node_line_lineno_val(node);
-      case NODE_INTEGER:
-        return rb_node_integer_literal_val(node);
-      case NODE_FLOAT:
-        return rb_node_float_literal_val(node);
-      case NODE_RATIONAL:
-        return rb_node_rational_literal_val(node);
-      case NODE_IMAGINARY:
-        return rb_node_imaginary_literal_val(node);
-      case NODE_ENCODING:
-        return rb_node_encoding_val(node);
-      case NODE_REGX:
-        return rb_node_regx_string_val(node);
-      case NODE_LIT:
-        return RNODE_LIT(node)->nd_lit;
-      default:
-        return Qundef;
-    }
-}
 
 #ifndef SHAREABLE_BARE_EXPRESSION
 #define SHAREABLE_BARE_EXPRESSION 1
@@ -14185,7 +14151,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
                 }
             }
             if (RTEST(lit)) {
-                VALUE e = shareable_literal_value(p, elt);
+                VALUE e = rb_shareable_literal_value(elt);
                 if (!UNDEF_P(e)) {
                     rb_ary_push(lit, e);
                 }
@@ -14224,8 +14190,8 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
                 }
             }
             if (RTEST(lit)) {
-                VALUE k = shareable_literal_value(p, key);
-                VALUE v = shareable_literal_value(p, val);
+                VALUE k = rb_shareable_literal_value(key);
+                VALUE v = rb_shareable_literal_value(val);
                 if (!UNDEF_P(k) && !UNDEF_P(v)) {
                     rb_hash_aset(lit, k, v);
                 }

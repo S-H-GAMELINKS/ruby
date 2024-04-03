@@ -34,6 +34,7 @@ VALUE rb_node_integer_literal_val(const NODE *);
 VALUE rb_node_float_literal_val(const NODE *);
 VALUE rb_node_rational_literal_val(const NODE *);
 VALUE rb_node_imaginary_literal_val(const NODE *);
+VALUE rb_shareable_literal_value(const NODE *node);
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_parser_end_seen_p(VALUE);
