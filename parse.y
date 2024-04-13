@@ -2338,12 +2338,6 @@ rb_parser_enc_compatible(struct parser_params *p, rb_parser_string_t *str1, rb_p
 }
 
 static void
-rb_parser_str_modify(rb_parser_string_t *str)
-{
-    PARSER_ENC_CODERANGE_CLEAR(str);
-}
-
-static void
 rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len)
 {
     long capa;

@@ -949,3 +949,9 @@ rb_script_lines_for(VALUE path)
     rb_hash_aset(hash, path, lines = rb_ary_new());
     return lines;
 }
+
+void
+rb_parser_str_modify(rb_parser_string_t *str)
+{
+    str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
+}
