@@ -34,6 +34,9 @@ VALUE rb_node_integer_literal_val(const NODE *);
 VALUE rb_node_float_literal_val(const NODE *);
 VALUE rb_node_rational_literal_val(const NODE *);
 VALUE rb_node_imaginary_literal_val(const NODE *);
+
+void rb_parser_str_modify(rb_parser_string_t *str);
+int rb_parser_dedent_string(struct parser_params *p, rb_parser_string_t *string, int width);
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_parser_end_seen_p(VALUE);

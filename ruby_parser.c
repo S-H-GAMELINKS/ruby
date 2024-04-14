@@ -550,7 +550,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .compile_warn = rb_compile_warn,
     .compile_warning = rb_compile_warning,
     .bug = rb_bug,
-    .fatal = rb_fatal,
     .verbose = ruby_verbose2,
     .errno_ptr = rb_errno_ptr2,
 
@@ -956,4 +955,111 @@ rb_script_lines_for(VALUE path)
     if (!RB_TYPE_P(hash, T_HASH)) return Qnil;
     rb_hash_aset(hash, path, lines = rb_ary_new());
     return lines;
+}
+
+void
+rb_parser_str_modify(rb_parser_string_t *str)
+{
+    str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
+}
+
+static int
+PARSER_ENC_CODERANGE(rb_parser_string_t *str)
+{
+    return str->coderange;
+}
+
+static void
+PARSER_ENC_CODERANGE_SET(rb_parser_string_t *str, int coderange)
+{
+    str->coderange = coderange;
+}
+
+static size_t
+rb_parser_str_capacity(rb_parser_string_t *str, const int termlen)
+{
+    return str->len;
+}
+
+static void
+rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len)
+{
+#define STRING_TERM_FILL(str) (str->ptr[str->len] = '\0')
+#define STRING_TERM_LEN(str) (1)
+#define STRING_SET_LEN(str, n) do { \
+    (str)->len = (n); \
+} while (0)
+    long capa;
+    const int termlen = STRING_TERM_LEN(str);
+
+    if (len > (capa = (long)(rb_parser_str_capacity(str, termlen))) || len < 0) {
+        rb_bug("probable buffer overflow: %ld for %ld", len, capa);
+    }
+
+    int cr = PARSER_ENC_CODERANGE(str);
+    if (cr == RB_PARSER_ENC_CODERANGE_UNKNOWN) {
+        /* Leave unknown. */
+    }
+    else if (len > str->len) {
+        PARSER_ENC_CODERANGE_SET(str, RB_PARSER_ENC_CODERANGE_UNKNOWN);
+    }
+    else if (len < str->len) {
+        if (cr != RB_PARSER_ENC_CODERANGE_7BIT) {
+            /* ASCII-only string is keeping after truncated.  Valid
+             * and broken may be invalid or valid, leave unknown. */
+            PARSER_ENC_CODERANGE_SET(str, RB_PARSER_ENC_CODERANGE_UNKNOWN);
+        }
+    }
+
+    STRING_SET_LEN(str, len);
+    STRING_TERM_FILL(str);
+#undef STRING_TERM_FILL
+#undef STRING_TERM_LEN
+#undef STRING_SET_LEN
+}
+
+static int
+dedent_string_column(const char *str, long len, int width)
+{
+#define TAB_WIDTH 8
+    int i, col = 0;
+
+    for (i = 0; i < len && col < width; i++) {
+        if (str[i] == ' ') {
+            col++;
+        }
+        else if (str[i] == '\t') {
+            int n = TAB_WIDTH * (col / TAB_WIDTH + 1);
+            if (n > width) break;
+            col = n;
+        }
+        else {
+            break;
+        }
+    }
+
+    return i;
+#undef TAB_WIDTH
+}
+
+int
+rb_parser_dedent_string(struct parser_params *p, rb_parser_string_t *string, int width)
+{
+    char *str;
+    long len;
+    int i;
+
+    len = string->len;
+    str = string->ptr;
+
+    i = dedent_string_column(str, len, width);
+    if (!i) return 0;
+
+    rb_parser_str_modify(string);
+    str = string->ptr;
+    if (string->len != len)
+        rb_fatal("literal string changed: %s", string->ptr);
+    MEMMOVE(str, str + i, char, len - i);
+    rb_parser_str_set_len(p, string, len - i);
+    return i;
 }
