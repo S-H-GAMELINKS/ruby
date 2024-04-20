@@ -98,7 +98,9 @@ VALUE rb_ruby_parser_ruby_sourcefile_string(rb_parser_t *p);
 int rb_ruby_parser_ruby_sourceline(rb_parser_t *p);
 int rb_ruby_parser_lex_state(rb_parser_t *p);
 void rb_ruby_ripper_parse0(rb_parser_t *p);
-int rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width);
+#ifndef UNIVERSAL_PARSER
+int rb_parser_dedent_string(struct parser_params *p, rb_parser_string_t *string, int width);
+#endif
 VALUE rb_ruby_ripper_lex_get_str(rb_parser_t *p, VALUE s);
 int rb_ruby_ripper_initialized_p(rb_parser_t *p);
 void rb_ruby_ripper_parser_initialize(rb_parser_t *p);
