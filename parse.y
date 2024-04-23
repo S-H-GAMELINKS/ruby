@@ -9168,7 +9168,7 @@ dedent_string_column(const char *str, long len, int width)
     return i;
 }
 
-int
+inline int
 rb_parser_dedent_string(struct parser_params *p, rb_parser_string_t *string, int width)
 {
     char *str;
