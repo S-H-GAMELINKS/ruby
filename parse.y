@@ -2140,11 +2140,13 @@ rb_char_p_hash(const char *c)
 }
 
 #ifndef UNIVERSAL_PARSER
+#ifndef RIPPER
 static size_t
 rb_parser_str_capacity(rb_parser_string_t *str, const int termlen)
 {
     return PARSER_STRING_LEN(str);
 }
+#endif
 #endif /* !UNIVERSAL_PARSER */
 
 #ifndef RIPPER
@@ -2355,6 +2357,7 @@ rb_parser_str_modify(rb_parser_string_t *str)
 }
 
 #ifndef UNIVERSAL_PARSER
+#ifndef RIPPER
 static void
 rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len)
 {
@@ -2383,6 +2386,7 @@ rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len
     STRING_SET_LEN(str, len);
     STRING_TERM_FILL(str);
 }
+#endif
 #endif /* !UNIVERSAL_PARSER */
 
 static rb_parser_string_t *
@@ -9146,6 +9150,7 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
 }
 
 #ifndef UNIVERSAL_PARSER
+#ifndef RIPPER
 static int
 dedent_string_column(const char *str, long len, int width)
 {
@@ -9189,6 +9194,7 @@ rb_parser_dedent_string(struct parser_params *p, rb_parser_string_t *string, int
     rb_parser_str_set_len(p, string, len - i);
     return i;
 }
+#endif
 #endif /* !UNIVERSAL_PARSER */
 
 static NODE *
