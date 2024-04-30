@@ -7905,7 +7905,7 @@ parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *
         if (rb_parser_is_ascii_string(p, str)) {
         }
         else if (rb_is_usascii_enc((void *)enc0) && enc != rb_utf8_encoding()) {
-            parser_str_enc_associate(str, rb_ascii8bit_encoding());
+            parser_str_enc_associate(str, (void *)rb_ascii8bit_encoding());
         }
     }
 
