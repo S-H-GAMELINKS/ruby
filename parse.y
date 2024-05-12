@@ -2866,7 +2866,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node_args> block_param opt_block_param block_param_def
-%type <node_kw_arg> f_kw f_block_kw
+%type <node_kw_arg> f_kw f_block_kw f_kw_label
 %type <id> bv_decls opt_bv_decl bvar
 %type <node> lambda lambda_body brace_body do_body
 %type <node_args> f_larglist
@@ -6752,6 +6752,14 @@ f_label 	: tLABEL
                     }
                 ;
 
+f_kw_label  : f_label
+                {
+                    p->cur_arg = 0;
+                    p->ctxt.in_argdef = 1;
+                    $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
+                /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), 0) %*/
+                }
+
 f_kw		: f_label arg_value
                     {
                         p->cur_arg = 0;
@@ -6759,13 +6767,7 @@ f_kw		: f_label arg_value
                         $$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
                     /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), get_value($:2)) %*/
                     }
-                | f_label
-                    {
-                        p->cur_arg = 0;
-                        p->ctxt.in_argdef = 1;
-                        $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), 0) %*/
-                    }
+                | f_kw_label
                 ;
 
 f_block_kw	: f_label primary_value
@@ -6774,12 +6776,7 @@ f_block_kw	: f_label primary_value
                         $$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
                     /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), get_value($:2)) %*/
                     }
-                | f_label
-                    {
-                        p->ctxt.in_argdef = 1;
-                        $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
-                    /*% ripper: rb_assoc_new(ripper_assignable(p, $1, get_value($:1)), 0) %*/
-                    }
+                | f_kw_label
                 ;
 
 kwrest_mark	: tPOW
