@@ -3353,12 +3353,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                         $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
                         ($$ = $head->nd_def)->nd_loc = @$;
                         RNODE_DEFN($$)->nd_defn = $bodystmt;
-                    /*%%%*/
-                    /*%
-                        VALUE val = dispatch4(bodystmt, get_value($:bodystmt), Qnil, Qnil, Qnil);
-                        val = dispatch3(def, get_value($:head), get_value($:args), val);
-                        set_value(val);
-                    %*/
+                    /*% ripper: def!(get_value($:head), get_value($:args), bodystmt!(get_value($:bodystmt), Qnil, Qnil, Qnil)) %*/
                         local_pop(p);
                     }
                 | defs_head[head] f_opt_paren_args[args] '=' endless_command[bodystmt]
@@ -4054,12 +4049,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                 | tUMINUS_NUM simple_numeric tPOW arg
                     {
                         $$ = call_uni_op(p, call_bin_op(p, $2, idPow, $4, &@2, &@$), idUMinus, &@1, &@$);
-                    /*%%%*/
-                    /*%
-                        VALUE val = dispatch3(binary, get_value($:2), ID2VAL(idPow), get_value($:4));
-                        val = dispatch2(unary, ID2VAL(idUMinus), val);
-                        set_value(val);
-                    %*/
+                    /*% ripper: unary!(ID2VAL(idUMinus), binary!(get_value($:2), ID2VAL(idPow), get_value($:4))) %*/
                     }
                 | tUPLUS arg
                     {
@@ -4167,12 +4157,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                         $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
                         ($$ = $head->nd_def)->nd_loc = @$;
                         RNODE_DEFN($$)->nd_defn = $bodystmt;
-                    /*%%%*/
-                    /*%
-                        VALUE val = dispatch4(bodystmt, get_value($:bodystmt), Qnil, Qnil, Qnil);
-                        val = dispatch3(def, get_value($:head), get_value($:args), val);
-                        set_value(val);
-                    %*/
+                    /*% ripper: def!(get_value($:head), get_value($:args), bodystmt!(get_value($:bodystmt), Qnil, Qnil, Qnil)) %*/
                         local_pop(p);
                     }
                 | defs_head[head] f_opt_paren_args[args] '=' endless_arg[bodystmt]
