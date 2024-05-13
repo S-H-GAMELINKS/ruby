@@ -2981,6 +2981,14 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %token tLAST_TOKEN
 
 /*
+ *	inlining
+ */
+%rule %inline inline_operation : tIDENTIFIER
+                               | tCONSTANT
+                               | tFID
+                               ;
+
+/*
  *	parameterizing rules
  */
 %rule f_opt(value) <node_opt_arg>: f_arg_asgn f_eq value
@@ -3855,9 +3863,7 @@ cpath		: tCOLON3 cname
                     }
                 ;
 
-fname		: tIDENTIFIER
-                | tCONSTANT
-                | tFID
+fname		: inline_operation
                 | op
                     {
                         SET_LEX_STATE(EXPR_ENDFN);
@@ -6963,9 +6969,7 @@ assoc		: arg_value tASSOC arg_value
                     }
                 ;
 
-operation	: tIDENTIFIER
-                | tCONSTANT
-                | tFID
+operation	: inline_operation
                 ;
 
 operation2	: operation
