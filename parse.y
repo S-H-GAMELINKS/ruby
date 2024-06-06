@@ -2770,7 +2770,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> paren_args opt_paren_args
 %type <node_args> args_tail block_args_tail
 %type <node> command_args aref_args
-%type <node_block_pass> opt_block_arg block_arg
+%type <node_block_pass> block_arg
 %type <node> var_ref var_lhs
 %type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
@@ -2942,6 +2942,18 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                                         /*% ripper: [Qnil, Qnil, Qnil] %*/
                                         }
                                     ;
+
+%rule opt_block_arg(arg) : ',' arg
+                             {
+                                 $$ = $2;
+                             /*% ripper: $:2 %*/
+                             }
+                         | none
+                             {
+                                 $$ = 0;
+                             /*% ripper: Qfalse %*/
+                             }
+                         ;
 
 %rule words(begin, word_list): begin ' '+ word_list tSTRING_END
                                 {
@@ -4236,18 +4248,18 @@ call_args	: command
                         $$ = NEW_LIST($1, &@$);
                     /*% ripper: args_add!(args_new!, $:1) %*/
                     }
-                | args opt_block_arg
+                | args opt_block_arg(block_arg)
                     {
                         $$ = arg_blk_pass($1, $2);
                     /*% ripper: args_add_block!($:1, $:2) %*/
                     }
-                | assocs opt_block_arg
+                | assocs opt_block_arg(block_arg)
                     {
                         $$ = $1 ? NEW_LIST(new_hash(p, $1, &@1), &@1) : 0;
                         $$ = arg_blk_pass($$, $2);
                     /*% ripper: args_add_block!(args_add!(args_new!, bare_assoc_hash!($:1)), $:2) %*/
                     }
-                | args ',' assocs opt_block_arg
+                | args ',' assocs opt_block_arg(block_arg)
                     {
                         $$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3), &@$) : $1;
                         $$ = arg_blk_pass($$, $4);
@@ -4305,18 +4317,6 @@ block_arg	: tAMPER arg_value
                         forwarding_arg_check(p, idFWD_BLOCK, idFWD_ALL, "block");
                         $$ = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@1), &@$);
                     /*% ripper: Qnil %*/
-                    }
-                ;
-
-opt_block_arg	: ',' block_arg
-                    {
-                        $$ = $2;
-                    /*% ripper: $:2 %*/
-                    }
-                | none
-                    {
-                        $$ = 0;
-                    /*% ripper: Qfalse %*/
                     }
                 ;
 
