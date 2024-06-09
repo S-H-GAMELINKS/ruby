@@ -330,12 +330,7 @@ typedef struct RNode_ITER {
     struct RNode *nd_iter;
 } rb_node_iter_t;
 
-typedef struct RNode_FOR {
-    NODE node;
-
-    struct RNode *nd_body;
-    struct RNode *nd_iter;
-} rb_node_for_t;
+typedef rb_node_iter_t rb_node_for_t;
 
 typedef struct RNode_FOR_MASGN {
     NODE node;
