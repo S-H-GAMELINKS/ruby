@@ -320,13 +320,7 @@ typedef struct RNode_WHILE {
     long nd_state;
 } rb_node_while_t;
 
-typedef struct RNode_UNTIL {
-    NODE node;
-
-    struct RNode *nd_cond;
-    struct RNode *nd_body;
-    long nd_state;
-} rb_node_until_t;
+typedef rb_node_while_t rb_node_until_t;
 
 /* RNode_ITER and RNode_FOR should be same structure */
 typedef struct RNode_ITER {
