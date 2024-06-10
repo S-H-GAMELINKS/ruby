@@ -909,12 +909,7 @@ typedef struct RNode_DOT2 {
     struct RNode *nd_end;
 } rb_node_dot2_t;
 
-typedef struct RNode_DOT3 {
-    NODE node;
-
-    struct RNode *nd_beg;
-    struct RNode *nd_end;
-} rb_node_dot3_t;
+typedef rb_node_dot2_t rb_node_dot3_t;
 
 typedef rb_node_dot2_t rb_node_flip2_t;
 typedef rb_node_dot3_t rb_node_flip3_t;
