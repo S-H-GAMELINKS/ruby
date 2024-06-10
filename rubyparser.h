@@ -738,12 +738,7 @@ typedef struct RNode_EVSTR {
     struct RNode *nd_body;
 } rb_node_evstr_t;
 
-typedef struct RNode_REGX {
-    NODE node;
-
-    struct rb_parser_string *string;
-    int options;
-} rb_node_regx_t;
+typedef rb_node_match_t rb_node_regx_t;
 
 typedef rb_node_dstr_t rb_node_dregx_t;
 
