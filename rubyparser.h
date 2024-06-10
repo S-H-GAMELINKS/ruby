@@ -400,12 +400,7 @@ typedef struct RNode_AND {
     struct RNode *nd_2nd;
 } rb_node_and_t;
 
-typedef struct RNode_OR {
-    NODE node;
-
-    struct RNode *nd_1st;
-    struct RNode *nd_2nd;
-} rb_node_or_t;
+typedef rb_node_and_t rb_node_or_t;
 
 typedef struct RNode_MASGN {
     NODE node;
