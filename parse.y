@@ -12440,6 +12440,7 @@ rb_node_redo_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_redo_t *n = NODE_NEWNODE(NODE_REDO, rb_node_redo_t, loc);
     n->nd_chain = 0;
+    n->nd_stts = 0;
 
     return n;
 }

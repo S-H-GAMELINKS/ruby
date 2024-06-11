@@ -346,18 +346,9 @@ typedef struct RNode_BREAK {
     struct RNode *nd_stts;
 } rb_node_break_t;
 
-typedef struct RNode_NEXT {
-    NODE node;
+typedef rb_node_break_t rb_node_next_t;
 
-    struct RNode *nd_chain;
-    struct RNode *nd_stts;
-} rb_node_next_t;
-
-typedef struct RNode_REDO {
-    NODE node;
-
-    struct RNode *nd_chain;
-} rb_node_redo_t;
+typedef rb_node_break_t rb_node_redo_t;
 
 typedef struct RNode_RETRY {
     NODE node;
