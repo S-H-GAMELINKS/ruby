@@ -561,13 +561,7 @@ typedef struct RNode_ZLIST {
     NODE node;
 } rb_node_zlist_t;
 
-typedef struct RNode_VALUES {
-    NODE node;
-
-    struct RNode *nd_head;
-    long nd_alen;
-    struct RNode *nd_next;
-} rb_node_values_t;
+typedef rb_node_list_t rb_node_values_t;
 
 typedef struct RNode_HASH {
     NODE node;
