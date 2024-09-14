@@ -180,7 +180,6 @@
 #define rb_raise p->config->raise
 #define syntax_error_new p->config->syntax_error_new
 
-#define rb_errinfo p->config->errinfo
 #define rb_set_errinfo p->config->set_errinfo
 #define rb_exc_raise p->config->exc_raise
 #define rb_make_exception p->config->make_exception

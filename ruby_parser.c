@@ -429,7 +429,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .raise = rb_raise,
     .syntax_error_new = syntax_error_new,
 
-    .errinfo = rb_errinfo,
     .set_errinfo = rb_set_errinfo,
     .exc_raise = rb_exc_raise,
     .make_exception = rb_make_exception,
@@ -765,6 +764,12 @@ static const rb_data_type_t ast_data_type = {
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
+
+VALUE
+rb_parser_get_error_info(void)
+{
+    return GET_EC()->errinfo;
+}
 
 static VALUE
 ast_alloc(void)
@@ -1144,3 +1149,4 @@ rb_ruby_ast_data_get(VALUE ast_value)
     TypedData_Get_Struct(ast_value, rb_ast_t, &ast_data_type, ast);
     return ast;
 }
+

@@ -1274,7 +1274,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*syntax_error_new)(void);
 
     /* Eval */
-    VALUE (*errinfo)(void);
     void (*set_errinfo)(VALUE err);
     void (*exc_raise)(VALUE mesg);
     VALUE (*make_exception)(int argc, const VALUE *argv);

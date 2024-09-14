@@ -15482,10 +15482,10 @@ reg_compile(struct parser_params* p, rb_parser_string_t *str, int options)
     VALUE re;
     VALUE err;
 
-    err = rb_errinfo();
+    err = rb_parser_get_error_info();
     re = parser_reg_compile(p, str, options);
     if (NIL_P(re)) {
-        VALUE m = rb_attr_get(rb_errinfo(), idMesg);
+        VALUE m = rb_attr_get(rb_parser_get_error_info(), idMesg);
         rb_set_errinfo(err);
         compile_error(p, "%"PRIsVALUE, m);
         return Qnil;
