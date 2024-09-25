@@ -13026,8 +13026,11 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
       case keyword__FILE__:
         {
             VALUE file = p->ruby_sourcefile_string;
-            if (NIL_P(file))
-                file = rb_str_new(0, 0);
+            if (NIL_P(file)) {
+	        rb_parser_string_t *str = rb_parser_string_new(p, 0, 0);
+		file = rb_str_new_parser_string(str);
+		rb_parser_string_free(p, str);
+	    }
             node = NEW_FILE(file, loc);
         }
         return node;
@@ -13415,6 +13418,7 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
 {
     va_list ap;
     VALUE mesg = rb_str_new_cstr("internal parser error: ");
+    rb_parser_string_t *pmesg = rb_parser_string_new(p, 0, 0);
 
     va_start(ap, fmt);
     rb_str_vcatf(mesg, fmt, ap);
@@ -13422,7 +13426,7 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     yyerror0(RSTRING_PTR(mesg));
     RB_GC_GUARD(mesg);
 
-    mesg = rb_str_new(0, 0);
+    mesg = rb_str_new_parser_string(pmesg);
     append_lex_state_name(p, p->lex.state, mesg);
     compile_error(p, "lex.state: %"PRIsVALUE, mesg);
     rb_str_resize(mesg, 0);
@@ -13434,6 +13438,7 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     if (p->debug_output == rb_ractor_stdout())
         p->debug_output = rb_ractor_stderr();
     p->debug = TRUE;
+    rb_parser_string_free(p, pmesg);
 }
 
 static YYLTYPE *
