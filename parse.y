@@ -13167,7 +13167,7 @@ str_to_sym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     if (rb_parser_enc_str_coderange(p, str) == RB_PARSER_ENC_CODERANGE_BROKEN) {
         yyerror1(loc, "invalid symbol");
         rb_parser_string_t *pstr = rb_parser_encoding_string_new(p, 0, 0, p->enc);
-        lit = rb_intern_str(rb_str_new_parser_string(pstr));
+        lit = rb_str_new_parser_string(pstr);
         rb_parser_string_free(p, pstr);
     }
     else {
