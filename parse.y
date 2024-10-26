@@ -1449,7 +1449,7 @@ static NODE *assignable(struct parser_params*,ID,NODE*,const YYLTYPE*);
 static NODE *aryset(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 static NODE *attrset(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 
-static VALUE rb_backref_error(struct parser_params*,NODE*);
+static void rb_backref_error(struct parser_params*,NODE*);
 static NODE *node_assign(struct parser_params*,NODE*,NODE*,struct lex_context,const YYLTYPE*);
 
 static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
@@ -1516,7 +1516,7 @@ RUBY_SYMBOL_EXPORT_END
 static void flush_string_content(struct parser_params *p, rb_encoding *enc, size_t back);
 static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
 static void error_duplicate_pattern_key(struct parser_params *p, ID id, const YYLTYPE *loc);
-static VALUE formal_argument_error(struct parser_params*, ID);
+static const char *formal_argument_error(struct parser_params*, ID);
 static ID shadowing_lvar(struct parser_params*,ID);
 static void new_bv(struct parser_params*,ID);
 
@@ -3299,9 +3299,9 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     }
                 | backref tOP_ASGN lex_ctxt command_rhs
                     {
-                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
+                        rb_backref_error(p, $1);
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
+                    /*% ripper[error]: assign_error!(Qnil, opassign!(var_field!($:1), $:2, $:4)) %*/
                     }
                 ;
 
@@ -3679,9 +3679,9 @@ mlhs_node	: user_or_keyword_variable
                     }
                 | backref
                     {
-                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
+                        rb_backref_error(p, $1);
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: assign_error!(?e, var_field!($:1)) %*/
+                    /*% ripper[error]: assign_error!(Qnil, var_field!($:1)) %*/
                     }
                 ;
 
@@ -3722,9 +3722,9 @@ lhs		: user_or_keyword_variable
                     }
                 | backref
                     {
-                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
+                        rb_backref_error(p, $1);
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: assign_error!(?e, var_field!($:1)) %*/
+                    /*% ripper[error]: assign_error!(Qnil, var_field!($:1)) %*/
                     }
                 ;
 
@@ -3877,9 +3877,9 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     }
                 | backref tOP_ASGN lex_ctxt arg_rhs
                     {
-                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
+                        rb_backref_error(p, $1);
                         $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
+                    /*% ripper[error]: assign_error!(Qnil, opassign!(var_field!($:1), $:2, $:4)) %*/
                     }
                 | arg tDOT2 arg
                     {
@@ -6539,9 +6539,9 @@ f_bad_arg	: tCONSTANT
 f_norm_arg	: f_bad_arg
                 | tIDENTIFIER
                     {
-                        VALUE e = formal_argument_error(p, $$ = $1);
+                        const char *e = formal_argument_error(p, $$ = $1);
                         if (e) {
-                            /*% ripper[error]: param_error!(?e, $:1) %*/
+                            /*% ripper[error]: param_error!(WARN_S(?e), $:1) %*/
                         }
                         p->max_numparam = ORDINAL_PARAM;
                     }
@@ -6594,10 +6594,10 @@ f_arg		: f_arg_item
 
 f_label 	: tLABEL
                     {
-                        VALUE e = formal_argument_error(p, $$ = $1);
+                        const char *e = formal_argument_error(p, $$ = $1);
                         if (e) {
                             $$ = 0;
-                            /*% ripper[error]: param_error!(?e, $:1) %*/
+                            /*% ripper[error]: param_error!(WARN_S(?e), $:1) %*/
                         }
                         /*
                          * Workaround for Prism::ParseTest#test_filepath for
@@ -9325,34 +9325,33 @@ arg_ambiguous(struct parser_params *p, char c)
     return TRUE;
 }
 
-/* returns true value if formal argument error;
- * Qtrue, or error message if ripper */
-static VALUE
+// returns error message if formal argument error
+static const char *
 formal_argument_error(struct parser_params *p, ID id)
 {
+#ifndef RIPPER
+#define ERR(mesg) (yyerror0(mesg), mesg)
+#else
+#define ERR(mesg) (mesg)
+#endif
     switch (id_type(id)) {
       case ID_LOCAL:
         break;
-#ifndef RIPPER
-# define ERR(mesg) (yyerror0(mesg), Qtrue)
-#else
-# define ERR(mesg) WARN_S(mesg)
-#endif
       case ID_CONST:
-        return ERR("formal argument cannot be a constant");
+        return "formal argument cannot be a constant";
       case ID_INSTANCE:
-        return ERR("formal argument cannot be an instance variable");
+        return "formal argument cannot be an instance variable";
       case ID_GLOBAL:
-        return ERR("formal argument cannot be a global variable");
+        return "formal argument cannot be a global variable";
       case ID_CLASS:
-        return ERR("formal argument cannot be a class variable");
+        return "formal argument cannot be a class variable";
       default:
-        return ERR("formal argument must be local variable");
-#undef ERR
+        return "formal argument must be local variable";
     }
+#undef ERR
     shadowing_lvar(p, id);
 
-    return Qfalse;
+    return NULL;
 }
 
 static int
@@ -13688,22 +13687,24 @@ attrset(struct parser_params *p, NODE *recv, ID atype, ID id, const YYLTYPE *loc
     return NEW_ATTRASGN(recv, id, 0, loc);
 }
 
-static VALUE
+static void
 rb_backref_error(struct parser_params *p, NODE *node)
 {
 #ifndef RIPPER
-# define ERR(...) (compile_error(p, __VA_ARGS__), Qtrue)
+# define ERR(...) (compile_error(p, __VA_ARGS__))
 #else
 # define ERR(...) rb_sprintf(__VA_ARGS__)
 #endif
     switch (nd_type(node)) {
       case NODE_NTH_REF:
-        return ERR("Can't set variable $%ld", RNODE_NTH_REF(node)->nd_nth);
+        ERR("Can't set variable $%ld", RNODE_NTH_REF(node)->nd_nth);
+        return;
       case NODE_BACK_REF:
-        return ERR("Can't set variable $%c", (int)RNODE_BACK_REF(node)->nd_nth);
+        ERR("Can't set variable $%c", (int)RNODE_BACK_REF(node)->nd_nth);
+        return;
     }
 #undef ERR
-    UNREACHABLE_RETURN(Qfalse); /* only called on syntax error */
+    UNREACHABLE; /* only called on syntax error */
 }
 
 static NODE *
