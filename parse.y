@@ -702,7 +702,6 @@ after_pop_stack(int len, struct parser_params *p)
 #define STRING_NEW0() rb_parser_encoding_string_new(p,0,0,p->enc)
 
 #define STR_NEW(ptr,len) rb_enc_str_new((ptr),(len),p->enc)
-#define STR_NEW0() rb_enc_str_new(0,0,p->enc)
 #define STR_NEW2(ptr) rb_enc_str_new((ptr),strlen(ptr),p->enc)
 #define STR_NEW3(ptr,len,e,func) parser_str_new(p, (ptr),(len),(e),(func),p->enc)
 #define TOK_INTERN() intern_cstr(tok(p), toklen(p), p->enc)
@@ -5791,7 +5790,9 @@ p_kw_label	: tLABEL
                         }
                         else {
                             yyerror1(&loc, "symbol literal with interpolation is not allowed");
-                            $$ = rb_intern_str(STR_NEW0());
+                            rb_parser_string_t *str = rb_parser_encoding_string_new(p, 0, 0, p->enc);
+                            $$ = rb_intern_str(rb_str_new_parser_string(str));
+                            rb_parser_string_free(p, str);
                         }
                     /*% ripper: $:2 %*/
                     }
@@ -6238,7 +6239,11 @@ ssym		: tSYMBEG sym
                          *   This branch can be removed once yylval is changed to
                          *   hold lexed string.
                          */
-                        if (!str) str = STR_NEW0();
+                        if (!str) {
+                            rb_parser_string_t *pstr = rb_parser_encoding_string_new(p, 0, 0, p->enc);
+                            str = rb_str_new_parser_string(pstr);
+                            rb_parser_string_free(p, pstr);
+                        }
                         $$ = NEW_SYM(str, &@$);
                     /*% ripper: symbol_literal!(symbol!($:2)) %*/
                     }
@@ -13135,7 +13140,9 @@ str_to_sym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     rb_parser_string_t *str = RNODE_STR(node)->string;
     if (rb_parser_enc_str_coderange(p, str) == RB_PARSER_ENC_CODERANGE_BROKEN) {
         yyerror1(loc, "invalid symbol");
-        lit = STR_NEW0();
+        rb_parser_string_t *pstr = rb_parser_encoding_string_new(p, 0, 0, p->enc);
+        lit = rb_str_new_parser_string(pstr);
+        rb_parser_string_free(p, pstr);
     }
     else {
         lit = rb_str_new_parser_string(str);
@@ -14638,7 +14645,10 @@ static NODE*
 dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     if (!node) {
-        return NEW_SYM(STR_NEW0(), loc);
+        rb_parser_string_t *pstr = rb_parser_encoding_string_new(p, 0, 0, p->enc);
+        NODE *n = NEW_SYM(rb_str_new_parser_string(pstr), loc);
+        rb_parser_string_free(p, pstr);
+        return n;
     }
 
     switch (nd_type(node)) {
