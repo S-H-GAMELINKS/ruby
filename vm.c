@@ -33,6 +33,7 @@
 #include "internal/variable.h"
 #include "iseq.h"
 #include "rjit.h"
+#include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
 #include "ruby/st.h"
 #include "ruby/vm.h"
@@ -171,7 +172,7 @@ vm_ep_in_heap_p_(const rb_execution_context_t *ec, const VALUE *ep)
         if (!UNDEF_P(envval)) {
             const rb_env_t *env = (const rb_env_t *)envval;
 
-            VM_ASSERT(vm_assert_env(envval));
+            VM_ASSERT(imemo_type_p(envval, imemo_env));
             VM_ASSERT(VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
             VM_ASSERT(env->ep == ep);
         }
@@ -518,6 +519,18 @@ jit_exec_exception(rb_execution_context_t *ec)
 
 static void add_opt_method_entry(const rb_method_entry_t *me);
 
+#define RB_TYPE_2_P(obj, type1, type2) \
+    (RB_TYPE_P(obj, type1) || RB_TYPE_P(obj, type2))
+#define RB_TYPE_3_P(obj, type1, type2, type3) \
+    (RB_TYPE_P(obj, type1) || RB_TYPE_P(obj, type2) || RB_TYPE_P(obj, type3))
+
+#define VM_ASSERT_TYPE(obj, type) \
+    VM_ASSERT(RB_TYPE_P(obj, type), #obj ": %s", rb_obj_info(obj))
+#define VM_ASSERT_TYPE2(obj, type1, type2) \
+    VM_ASSERT(RB_TYPE_2_P(obj, type1, type2), #obj ": %s", rb_obj_info(obj))
+#define VM_ASSERT_TYPE3(obj, type1, type2, type3) \
+    VM_ASSERT(RB_TYPE_3_P(obj, type1, type2, type3), #obj ": %s", rb_obj_info(obj))
+
 #include "vm_insnhelper.c"
 
 #include "vm_exec.c"
@@ -544,7 +557,7 @@ RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
 RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
 #endif
 
-// no-inline decl on thread_pthread.h
+// no-inline decl on vm_core.h
 rb_execution_context_t *
 rb_current_ec_noinline(void)
 {
@@ -568,6 +581,14 @@ rb_current_ec(void)
 #endif
 #else
 native_tls_key_t ruby_current_ec_key;
+
+// no-inline decl on vm_core.h
+rb_execution_context_t *
+rb_current_ec_noinline(void)
+{
+    return native_tls_get(ruby_current_ec_key);
+}
+
 #endif
 
 rb_event_flag_t ruby_vm_event_flags;
@@ -2243,6 +2264,7 @@ vm_init_redefined_flag(void)
     OP(NilP, NIL_P), (C(NilClass));
     OP(Cmp, CMP), (C(Integer), C(Float), C(String));
     OP(Default, DEFAULT), (C(Hash));
+    OP(IncludeP, INCLUDE_P), (C(Array));
 #undef C
 #undef OP
 }
@@ -3083,20 +3105,16 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_id_table_free(vm->constant_cache);
             st_free_table(vm->unused_block_warning_table);
 
-            if (th) {
-                xfree(th->nt);
-                th->nt = NULL;
-            }
+            xfree(th->nt);
+            th->nt = NULL;
 
 #ifndef HAVE_SETPROCTITLE
             ruby_free_proctitle();
 #endif
         }
         else {
-            if (th) {
-                rb_fiber_reset_root_local_storage(th);
-                thread_free(th);
-            }
+            rb_fiber_reset_root_local_storage(th);
+            thread_free(th);
         }
 
         struct rb_objspace *objspace = vm->gc.objspace;
@@ -3141,6 +3159,12 @@ ruby_vm_destruct(rb_vm_t *vm)
         /* after freeing objspace, you *can't* use ruby_xfree() */
         ruby_mimfree(vm);
         ruby_current_vm_ptr = NULL;
+
+#if USE_YJIT
+        if (rb_free_at_exit) {
+            rb_yjit_free_at_exit();
+        }
+#endif
     }
     RUBY_FREE_LEAVE("vm");
     return 0;
@@ -3479,6 +3503,8 @@ thread_mark(void *ptr)
 
     rb_gc_mark(th->scheduler);
 
+    rb_threadptr_interrupt_exec_task_mark(th);
+
     RUBY_MARK_LEAVE("thread");
 }
 
@@ -3555,7 +3581,7 @@ thread_alloc(VALUE klass)
     return TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
 }
 
-inline void
+void
 rb_ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
 {
     ec->vm_stack = stack;
@@ -3631,6 +3657,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->name = Qnil;
     th->report_on_exception = vm->thread_report_on_exception;
     th->ext_config.ractor_safe = true;
+
+    ccan_list_head_init(&th->interrupt_exec_tasks);
 
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t thread_serial = 1;
@@ -4259,12 +4287,6 @@ Init_BareVM(void)
     vm->constant_cache = rb_id_table_create(0);
     vm->unused_block_warning_table = st_init_numtable();
 
-    // TODO: remove before Ruby 3.4.0 release
-    const char *s = getenv("RUBY_TRY_UNUSED_BLOCK_WARNING_STRICT");
-    if (s && strcmp(s, "1") == 0) {
-        vm->unused_block_warning_strict = true;
-    }
-
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);
     th->vm = vm;
@@ -4424,6 +4446,9 @@ Init_vm_objects(void)
 #if !USE_YJIT
 void Init_builtin_yjit(void) {}
 #endif
+
+// Whether YJIT is enabled or not, we load yjit_hook.rb to remove Kernel#with_yjit.
+#include "yjit_hook.rbinc"
 
 // Stub for builtin function when not building RJIT units
 #if !USE_RJIT

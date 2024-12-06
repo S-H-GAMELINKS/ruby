@@ -407,6 +407,7 @@ The internal error was:
 
     return [] if file_list.empty?
 
+    # This workaround can be removed after the :main: directive is removed
     original_options = @options.dup
     @stats.begin_adding
 
@@ -414,6 +415,8 @@ The internal error was:
       @current = filename
       parse_file filename
     end.compact
+
+    @store.resolve_c_superclasses
 
     @stats.done_adding
     @options = original_options

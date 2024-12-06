@@ -4142,7 +4142,14 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
 
     // If errno is set, then it should only be ERANGE. At this point we need to
     // check if it's infinity (it should be).
-    if (errno == ERANGE && isinf(value)) {
+    if (
+        errno == ERANGE &&
+#ifdef _WIN32
+        !_finite(value)
+#else
+        isinf(value)
+#endif
+    ) {
         int warn_width;
         const char *ellipsis;
 
@@ -10688,6 +10695,14 @@ parser_lex(pm_parser_t *parser) {
             // We'll check if we're at the end of the file. If we are, then we
             // need to return the EOF token.
             if (parser->current.end >= parser->end) {
+                // If we hit EOF, but the EOF came immediately after a newline,
+                // set the start of the token to the newline.  This way any EOF
+                // errors will be reported as happening on that line rather than
+                // a line after.  For example "foo(\n" should report an error
+                // on line 1 even though EOF technically occurs on line 2.
+                if (parser->current.start > parser->start && (*(parser->current.start - 1) == '\n')) {
+                    parser->current.start -= 1;
+                }
                 LEX(PM_TOKEN_EOF);
             }
 
@@ -10869,6 +10884,10 @@ parser_lex(pm_parser_t *parser) {
 
                 // ,
                 case ',':
+                    if ((parser->previous.type == PM_TOKEN_COMMA) && (parser->enclosure_nesting > 0)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_ARRAY_TERM, pm_token_type_human(parser->current.type));
+                    }
+
                     lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
                     LEX(PM_TOKEN_COMMA);
 
@@ -14190,6 +14209,9 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 if (match4(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_COMMA, PM_TOKEN_SEMICOLON, PM_TOKEN_BRACKET_RIGHT)) {
                     pm_parser_scope_forwarding_positionals_check(parser, &operator);
                     argument = (pm_node_t *) pm_splat_node_create(parser, &operator, NULL);
+                    if (parsed_bare_hash) {
+                        pm_parser_err_previous(parser, PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT);
+                    }
                 } else {
                     pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, false, false, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT, (uint16_t) (depth + 1));
 
@@ -15114,7 +15136,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
                 case PM_RESCUES_LAMBDA: context = PM_CONTEXT_LAMBDA_ELSE; break;
                 case PM_RESCUES_MODULE: context = PM_CONTEXT_MODULE_ELSE; break;
                 case PM_RESCUES_SCLASS: context = PM_CONTEXT_SCLASS_ELSE; break;
-                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
+                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_ELSE; break;
             }
 
             else_statements = parse_statements(parser, context, (uint16_t) (depth + 1));
@@ -19212,6 +19234,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             context_push(parser, PM_CONTEXT_DEF_PARAMS);
             parser_lex(parser);
 
+            // This will be false if the method name is not a valid identifier
+            // but could be followed by an operator.
+            bool valid_name = true;
+
             switch (parser->current.type) {
                 case PM_CASE_OPERATOR:
                     pm_parser_scope_push(parser, true);
@@ -19241,10 +19267,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                     break;
                 }
-                case PM_TOKEN_CONSTANT:
                 case PM_TOKEN_INSTANCE_VARIABLE:
                 case PM_TOKEN_CLASS_VARIABLE:
                 case PM_TOKEN_GLOBAL_VARIABLE:
+                    valid_name = false;
+                    /* fallthrough */
+                case PM_TOKEN_CONSTANT:
                 case PM_TOKEN_KEYWORD_NIL:
                 case PM_TOKEN_KEYWORD_SELF:
                 case PM_TOKEN_KEYWORD_TRUE:
@@ -19302,6 +19330,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                         name = parse_method_definition_name(parser);
                     } else {
+                        if (!valid_name) {
+                            PM_PARSER_ERR_TOKEN_FORMAT(parser, identifier, PM_ERR_DEF_NAME, pm_token_type_human(identifier.type));
+                        }
+
                         name = identifier;
                     }
                     break;
@@ -21399,6 +21431,33 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
         case PM_TOKEN_STAR:
         case PM_TOKEN_STAR_STAR: {
             parser_lex(parser);
+            pm_token_t operator = parser->previous;
+            switch (PM_NODE_TYPE(node)) {
+                case PM_RESCUE_MODIFIER_NODE: {
+                    pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
+                    if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                    }
+                    break;
+                }
+                case PM_AND_NODE: {
+                    pm_and_node_t *cast = (pm_and_node_t *) node;
+                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                    }
+                    break;
+                }
+                case PM_OR_NODE: {
+                    pm_or_node_t *cast = (pm_or_node_t *) node;
+                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+
             pm_node_t *argument = parse_expression(parser, binding_power, false, false, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
             return (pm_node_t *) pm_call_node_binary_create(parser, node, &token, argument, 0);
         }
@@ -21424,6 +21483,32 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
                 parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
                 return (pm_node_t *) pm_call_node_shorthand_create(parser, node, &operator, &arguments);
+            }
+
+            switch (PM_NODE_TYPE(node)) {
+                case PM_RESCUE_MODIFIER_NODE: {
+                    pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
+                    if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                    }
+                    break;
+                }
+                case PM_AND_NODE: {
+                    pm_and_node_t *cast = (pm_and_node_t *) node;
+                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                    }
+                    break;
+                }
+                case PM_OR_NODE: {
+                    pm_or_node_t *cast = (pm_or_node_t *) node;
+                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                    }
+                    break;
+                }
+                default:
+                    break;
             }
 
             pm_token_t message;

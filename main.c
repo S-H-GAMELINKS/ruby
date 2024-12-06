@@ -24,7 +24,7 @@
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
-#if USE_SHARED_GC
+#if USE_MODULAR_GC
 #include "internal/gc.h"
 #endif
 
@@ -46,6 +46,12 @@ rb_main(int argc, char **argv)
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
 int rb_wasm_rt_start(int (main)(int argc, char **argv), int argc, char **argv);
 #define rb_main(argc, argv) rb_wasm_rt_start(rb_main, argc, argv)
+#endif
+
+#ifdef _WIN32
+#define main(argc, argv) w32_main(argc, argv)
+static int main(int argc, char **argv);
+int wmain(void) {return main(0, NULL);}
 #endif
 
 int

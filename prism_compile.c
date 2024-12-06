@@ -867,7 +867,6 @@ pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LAB
     const pm_node_location_t location = PM_NODE_START_LOCATION(scope_node->parser, cond);
 
     DECL_ANCHOR(seq);
-    INIT_ANCHOR(seq);
 
     LABEL *label = NEW_LABEL(location.line);
     if (!then_label) then_label = label;
@@ -1000,7 +999,6 @@ again:
       }
       default: {
         DECL_ANCHOR(cond_seq);
-        INIT_ANCHOR(cond_seq);
         pm_compile_node(iseq, cond, cond_seq, false, scope_node);
 
         if (LIST_INSN_SIZE_ONE(cond_seq)) {
@@ -1040,7 +1038,6 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location,
     LABEL *end_label = NULL;
 
     DECL_ANCHOR(cond_seq);
-    INIT_ANCHOR(cond_seq);
     pm_compile_branch_condition(iseq, cond_seq, predicate, then_label, else_label, false, scope_node);
     PUSH_SEQ(ret, cond_seq);
 
@@ -1056,7 +1053,6 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location,
         PUSH_LABEL(ret, then_label);
 
         DECL_ANCHOR(then_seq);
-        INIT_ANCHOR(then_seq);
 
         if (statements != NULL) {
             pm_compile_node(iseq, (const pm_node_t *) statements, then_seq, popped, scope_node);
@@ -1097,7 +1093,6 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location,
         PUSH_LABEL(ret, else_label);
 
         DECL_ANCHOR(else_seq);
-        INIT_ANCHOR(else_seq);
 
         if (subsequent != NULL) {
             pm_compile_node(iseq, subsequent, else_seq, popped, scope_node);
@@ -1268,11 +1263,17 @@ pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t *node, VALUE name, const rb_i
 {
     debugs("[new_child_iseq]> ---------------------------------------\n");
     int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
+    int error_state;
     rb_iseq_t *ret_iseq = pm_iseq_new_with_opt(node, name,
             rb_iseq_path(iseq), rb_iseq_realpath(iseq),
             line_no, parent,
             isolated_depth ? isolated_depth + 1 : 0,
-            type, ISEQ_COMPILE_DATA(iseq)->option);
+            type, ISEQ_COMPILE_DATA(iseq)->option, &error_state);
+
+    if (error_state) {
+        RUBY_ASSERT(ret_iseq == NULL);
+        rb_jump_tag(error_state);
+    }
     debugs("[new_child_iseq]< ---------------------------------------\n");
     return ret_iseq;
 }
@@ -1383,7 +1384,6 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
     bool static_literal = false;
 
     DECL_ANCHOR(anchor);
-    INIT_ANCHOR(anchor);
 
     // Convert pushed elements to a hash, and merge if needed.
 #define FLUSH_CHUNK                                                                         \
@@ -1927,7 +1927,6 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
         }
 
         DECL_ANCHOR(block_arg);
-        INIT_ANCHOR(block_arg);
         pm_compile_node(iseq, block, block_arg, false, scope_node);
 
         *flags |= VM_CALL_ARGS_BLOCKARG;
@@ -2826,7 +2825,6 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 
         if (has_keys) {
             DECL_ANCHOR(match_values);
-            INIT_ANCHOR(match_values);
 
             for (size_t index = 0; index < cast->elements.size; index++) {
                 const pm_node_t *element = cast->elements.nodes[index];
@@ -3376,7 +3374,7 @@ pm_compile_builtin_attr(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, cons
         }
 
         VALUE symbol = pm_static_literal_value(iseq, argument, scope_node);
-        VALUE string = rb_sym_to_s(symbol);
+        VALUE string = rb_sym2str(symbol);
 
         if (strcmp(RSTRING_PTR(string), "leaf") == 0) {
             ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
@@ -3386,6 +3384,10 @@ pm_compile_builtin_attr(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, cons
         }
         else if (strcmp(RSTRING_PTR(string), "use_block") == 0) {
             iseq_set_use_block(iseq);
+        }
+        else if (strcmp(RSTRING_PTR(string), "c_trace") == 0) {
+            // Let the iseq act like a C method in backtraces
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
         }
         else {
             COMPILE_ERROR(iseq, node_location->line, "unknown argument to attr!: %s", RSTRING_PTR(string));
@@ -3475,6 +3477,7 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
     pm_scope_node_t next_scope_node;
     pm_scope_node_init(&def.base, &next_scope_node, scope_node);
 
+    int error_state;
     ISEQ_BODY(iseq)->mandatory_only_iseq = pm_iseq_new_with_opt(
         &next_scope_node,
         rb_iseq_base_label(iseq),
@@ -3484,8 +3487,14 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
         NULL,
         0,
         ISEQ_TYPE_METHOD,
-        ISEQ_COMPILE_DATA(iseq)->option
+        ISEQ_COMPILE_DATA(iseq)->option,
+        &error_state
     );
+
+    if (error_state) {
+        RUBY_ASSERT(ISEQ_BODY(iseq)->mandatory_only_iseq == NULL);
+        rb_jump_tag(error_state);
+    }
 
     pm_scope_node_destroy(&next_scope_node);
     return COMPILE_OK;
@@ -3560,7 +3569,6 @@ retry:;
     // fprintf(stderr, "func_name:%s -> %p\n", builtin_func, bf->func_ptr);
 
     DECL_ANCHOR(args_seq);
-    INIT_ANCHOR(args_seq);
 
     int flags = 0;
     struct rb_callinfo_kwarg *keywords = NULL;
@@ -3613,6 +3621,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             const uint8_t *end_cursor = cursors[0];
             end_cursor = (end_cursor == NULL || cursors[1] == NULL) ? cursors[1] : (end_cursor > cursors[1] ? end_cursor : cursors[1]);
             end_cursor = (end_cursor == NULL || cursors[2] == NULL) ? cursors[2] : (end_cursor > cursors[2] ? end_cursor : cursors[2]);
+            if (!end_cursor) end_cursor = call_node->closing_loc.end;
 
             const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, call_node);
             const pm_line_column_t end_location = pm_newline_list_line_column(&scope_node->parser->newline_list, end_cursor, scope_node->parser->start_line);
@@ -4138,13 +4147,11 @@ pm_add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return, pm_sc
     struct iseq_compile_data_ensure_node_stack *prev_enlp = enlp;
     DECL_ANCHOR(ensure);
 
-    INIT_ANCHOR(ensure);
     while (enlp) {
         if (enlp->erange != NULL) {
             DECL_ANCHOR(ensure_part);
             LABEL *lstart = NEW_LABEL(0);
             LABEL *lend = NEW_LABEL(0);
-            INIT_ANCHOR(ensure_part);
 
             add_ensure_range(iseq, enlp->erange, lstart, lend);
 
@@ -4835,10 +4842,7 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
         // owning expression of this target, then retrieve the value, expand it,
         // and then compile the necessary writes.
         DECL_ANCHOR(writes);
-        INIT_ANCHOR(writes);
-
         DECL_ANCHOR(cleanup);
-        INIT_ANCHOR(cleanup);
 
         pm_multi_target_state_t state = { 0 };
         state.position = 1;
@@ -4855,10 +4859,7 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
       }
       case PM_MULTI_TARGET_NODE: {
         DECL_ANCHOR(writes);
-        INIT_ANCHOR(writes);
-
         DECL_ANCHOR(cleanup);
-        INIT_ANCHOR(cleanup);
 
         pm_compile_target_node(iseq, node, ret, writes, cleanup, scope_node, NULL);
 
@@ -4976,7 +4977,6 @@ pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
     struct ensure_range *erange;
 
     DECL_ANCHOR(ensr);
-    INIT_ANCHOR(ensr);
     if (statements != NULL) {
         pm_compile_node(iseq, (const pm_node_t *) statements, ensr, true, scope_node);
     }
@@ -5311,7 +5311,6 @@ pm_compile_shareable_constant_value(rb_iseq_t *iseq, const pm_node_t *node, cons
       }
       default: {
         DECL_ANCHOR(value_seq);
-        INIT_ANCHOR(value_seq);
 
         pm_compile_node(iseq, node, value_seq, false, scope_node);
         if (PM_NODE_TYPE_P(node, PM_INTERPOLATED_STRING_NODE)) {
@@ -7107,13 +7106,11 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
     // `when` nodes into. If a match is found, they will need to jump into
     // the body_seq anchor to the correct spot.
     DECL_ANCHOR(cond_seq);
-    INIT_ANCHOR(cond_seq);
 
     // This is the anchor that we will compile the bodies of the various
     // `when` nodes into. We'll make sure that the clauses that are compiled
     // jump into the correct spots within this anchor.
     DECL_ANCHOR(body_seq);
-    INIT_ANCHOR(body_seq);
 
     // This is the label where all of the when clauses will jump to if they
     // have matched and are done executing their bodies.
@@ -7366,13 +7363,11 @@ pm_compile_case_match_node(rb_iseq_t *iseq, const pm_case_match_node_t *node, co
     // `in` nodes into. We'll make sure that the patterns that are compiled
     // jump into the correct spots within this anchor.
     DECL_ANCHOR(body_seq);
-    INIT_ANCHOR(body_seq);
 
     // This is the anchor that we will compile the patterns of the various
     // `in` nodes into. If a match is found, they will need to jump into the
     // body_seq anchor to the correct spot.
     DECL_ANCHOR(cond_seq);
-    INIT_ANCHOR(cond_seq);
 
     // This label is used to indicate the end of the entire node. It is
     // jumped to after the entire stack is cleaned up.
@@ -7542,7 +7537,6 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
     }
 
     DECL_ANCHOR(args);
-    INIT_ANCHOR(args);
 
     struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     const rb_iseq_t *local_iseq = body->local_iseq;
@@ -7761,7 +7755,6 @@ pm_compile_match_write_node(rb_iseq_t *iseq, const pm_match_write_node_t *node, 
     }
 
     DECL_ANCHOR(fail_anchor);
-    INIT_ANCHOR(fail_anchor);
 
     // Otherwise there is more than one local variable target, so we'll need
     // to do some bookkeeping.
@@ -7997,10 +7990,7 @@ pm_compile_rescue_node(rb_iseq_t *iseq, const pm_rescue_node_t *node, const pm_n
     // depending on the kind of write being performed.
     if (node->reference) {
         DECL_ANCHOR(writes);
-        INIT_ANCHOR(writes);
-
         DECL_ANCHOR(cleanup);
-        INIT_ANCHOR(cleanup);
 
         pm_compile_target_node(iseq, node->reference, ret, writes, cleanup, scope_node, NULL);
         PUSH_GETLOCAL(ret, *location, LVAR_ERRINFO, 0);
@@ -8101,7 +8091,6 @@ static inline void
 pm_compile_super_node(rb_iseq_t *iseq, const pm_super_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     DECL_ANCHOR(args);
-    INIT_ANCHOR(args);
 
     LABEL *retry_label = NEW_LABEL(location->line);
     LABEL *retry_end_l = NEW_LABEL(location->line);
@@ -8559,10 +8548,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         else {
             DECL_ANCHOR(prefix);
-            INIT_ANCHOR(prefix);
-
             DECL_ANCHOR(body);
-            INIT_ANCHOR(body);
 
             pm_compile_constant_path(iseq, node, prefix, body, popped, scope_node);
             if (LIST_INSN_SIZE_ZERO(prefix)) {
@@ -9485,10 +9471,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_multi_write_node_t *cast = (const pm_multi_write_node_t *) node;
 
         DECL_ANCHOR(writes);
-        INIT_ANCHOR(writes);
-
         DECL_ANCHOR(cleanup);
-        INIT_ANCHOR(cleanup);
 
         pm_multi_target_state_t state = { 0 };
         state.position = popped ? 0 : 1;
@@ -9608,11 +9591,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // anchors and then join them in the correct order into the resulting
         // anchor.
         DECL_ANCHOR(inner_pre);
-        INIT_ANCHOR(inner_pre);
         scope_node->pre_execution_anchor = inner_pre;
 
         DECL_ANCHOR(inner_body);
-        INIT_ANCHOR(inner_body);
 
         if (cast->statements != NULL) {
             const pm_node_list_t *body = &cast->statements->body;
@@ -10072,7 +10053,6 @@ VALUE
 pm_iseq_compile_node(rb_iseq_t *iseq, pm_scope_node_t *node)
 {
     DECL_ANCHOR(ret);
-    INIT_ANCHOR(ret);
 
     if (pm_iseq_pre_execution_p(iseq)) {
         // Because these ISEQs can have BEGIN{}, we're going to create two
@@ -10080,14 +10060,12 @@ pm_iseq_compile_node(rb_iseq_t *iseq, pm_scope_node_t *node)
         // on the scope node so that when BEGIN{} is found, its contents will be
         // added to the "pre" anchor.
         DECL_ANCHOR(pre);
-        INIT_ANCHOR(pre);
         node->pre_execution_anchor = pre;
 
         // Now we'll compile the body as normal. We won't compile directly into
         // the "ret" anchor yet because we want to add the "pre" anchor to the
         // beginning of the "ret" anchor first.
         DECL_ANCHOR(body);
-        INIT_ANCHOR(body);
         pm_compile_node(iseq, (const pm_node_t *) node, body, false, node);
 
         // Now we'll join both anchors together so that the content is in the
@@ -10882,6 +10860,7 @@ pm_read_file(pm_string_t *string, const char *filepath)
 
     source = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (source == MAP_FAILED) {
+        close(fd);
         return PM_STRING_INIT_ERROR_GENERIC;
     }
 
