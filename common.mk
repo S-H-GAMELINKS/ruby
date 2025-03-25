@@ -715,7 +715,7 @@ clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-modular-gc c
 clean-local:: clean-runnable
 	$(Q)$(RM) $(ALLOBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
-	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
+	$(Q)$(RM) $(PARSER_SRCS) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
 	$(Q)$(RM) $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/*/.time yjit_exit_locations.dump
@@ -1053,6 +1053,42 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: touch-unicode-files
 
 PHONY:
+
+
+
+PARSER_SRCS = parse.y \
+	      parser_bits.h \
+	      parser_node.h \
+	      parser_st.c \
+	      parser_st.h \
+	      parser_value.h \
+	      ruby_parser.c \
+	      rubyparser.h \
+	    # PARSER_SRCS
+
+parse.y:
+	cp $(srcdir)/ext/parser/$@ $@
+
+parser_bits.h:
+	cp $(srcdir)/ext/parser/$@ $@
+
+parser_node.h:
+	cp $(srcdir)/ext/parser/$@ $@
+
+parser_st.c:
+	cp $(srcdir)/ext/parser/$@ $@
+
+parser_st.h:
+	cp $(srcdir)/ext/parser/$@ $@
+
+parser_value.h:
+	cp $(srcdir)/ext/parser/$@ $@
+
+ruby_parser.c:
+	cp $(srcdir)/ext/parser/$@ $@
+
+rubyparser.h:
+	cp $(srcdir)/ext/parser/$@ $@
 
 {$(VPATH)}parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
 {$(VPATH)}parse.h: {$(VPATH)}parse.c

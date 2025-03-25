@@ -273,3 +273,14 @@ lcov*.info
 /bundled_gems.json
 /default_gems.json
 /gems/default_gems
+
+# parser
+/parse.y
+/parser_bits.h
+/parser_node.h
+/parser_st.c
+/parser_st.h
+/parser_value.h
+/ruby_parser.c
+/rubyparser.h
+
