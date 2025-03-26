@@ -1064,15 +1064,37 @@ PARSER_SRCS = parse.y \
 	      rubyparser.h \
 	    # PARSER_SRCS
 
-$(PARSER_SRCS): import-parser-srcs
+{$(VPATH)}parse.y:
+	cp -u $(srcdir)/ext/parser/$@ $@; \
+	cp -u $(srcdir)/ext/parser/$@ $(srcdir)/$@; \
 
-.PHONY: import-parser-srcs
-import-parser-srcs:
-	$(ECHO) import parser
-	for src in $(PARSER_SRCS); do \
-	  cp -u $(srcdir)/ext/parser/$$src $$src; \
-	  cp -u $(srcdir)/ext/parser/$$src $(srcdir)/$$src; \
-	done
+{$(VPATH)}parser_bits.h:
+	cp -u $(srcdir)/ext/parser/$@ $@; \
+	cp -u $(srcdir)/ext/parser/$@ $(srcdir)/$@; \
+
+{$(VPATH)}parser_node.h:
+	cp -u $(srcdir)/ext/parser/$@ $@; \
+	cp -u $(srcdir)/ext/parser/$@ $(srcdir)/$@; \
+
+{$(VPATH)}parser_st.c:
+	cp -u $(srcdir)/ext/parser/$@ $@; \
+	cp -u $(srcdir)/ext/parser/$@ $(srcdir)/$@; \
+
+{$(VPATH)}parser_st.h:
+	cp -u $(srcdir)/ext/parser/$@ $@; \
+	cp -u $(srcdir)/ext/parser/$@ $(srcdir)/$@; \
+
+{$(VPATH)}parser_value.h:
+	cp -u $(srcdir)/ext/parser/$@ $@; \
+	cp -u $(srcdir)/ext/parser/$@ $(srcdir)/$@; \
+
+{$(VPATH)}ruby_parser.c:
+	cp -u $(srcdir)/ext/parser/$@ $@; \
+	cp -u $(srcdir)/ext/parser/$@ $(srcdir)/$@; \
+
+{$(VPATH)}rubyparser.h:
+	cp -u $(srcdir)/ext/parser/$@ $@; \
+	cp -u $(srcdir)/ext/parser/$@ $(srcdir)/$@; \
 
 #$(Q)$(BASERUBY) $(tooldir)/import_parser.rb $(PARSER_SRCS)
 
