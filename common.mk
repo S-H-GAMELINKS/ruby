@@ -1054,8 +1054,6 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 
 PHONY:
 
-
-
 PARSER_SRCS = parse.y \
 	      parser_bits.h \
 	      parser_node.h \
@@ -1066,29 +1064,17 @@ PARSER_SRCS = parse.y \
 	      rubyparser.h \
 	    # PARSER_SRCS
 
-parse.y:
-	cp $(srcdir)/ext/parser/$@ $@
+$(PARSER_SRCS): import-parser-srcs
 
-parser_bits.h:
-	cp $(srcdir)/ext/parser/$@ $@
+.PHONY: import-parser-srcs
+import-parser-srcs:
+	$(ECHO) import parser
+	for src in $(PARSER_SRCS); do \
+	  cp -u $(srcdir)/ext/parser/$$src $$src; \
+	  cp -u $(srcdir)/ext/parser/$$src $(srcdir)/$$src; \
+	done
 
-parser_node.h:
-	cp $(srcdir)/ext/parser/$@ $@
-
-parser_st.c:
-	cp $(srcdir)/ext/parser/$@ $@
-
-parser_st.h:
-	cp $(srcdir)/ext/parser/$@ $@
-
-parser_value.h:
-	cp $(srcdir)/ext/parser/$@ $@
-
-ruby_parser.c:
-	cp $(srcdir)/ext/parser/$@ $@
-
-rubyparser.h:
-	cp $(srcdir)/ext/parser/$@ $@
+#$(Q)$(BASERUBY) $(tooldir)/import_parser.rb $(PARSER_SRCS)
 
 {$(VPATH)}parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
 {$(VPATH)}parse.h: {$(VPATH)}parse.c
