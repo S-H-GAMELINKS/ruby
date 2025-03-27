@@ -4568,6 +4568,12 @@ AS_IF([test ! -f "$srcdir/revision.h"], [
     ])
 ])
 
+AS_IF([test "x$HAVE_BASERUBY" = xyes], [
+    ${BASERUBY} -C "$srcdir" tool/import_parser.rb
+], [
+    cp -pR "$srcdir/ext/parser/*" "$srcdir"
+])
+
 AS_IF([test x"$firstmf" != x], [
     AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
 ])

@@ -1065,13 +1065,6 @@ PARSER_SRCS = parse.y \
 	      rubyparser.h \
 	    # PARSER_SRCS
 
-.PHONY: import-parser
-import-parser:
-	$(ECHO) importing parser
-	$(Q)$(BASERUBY) $(tooldir)/import_parser.rb $(PARSER_SRCS)
-
-$(PARSER_SRCS): import-parser
-
 {$(VPATH)}parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
 {$(VPATH)}parse.h: {$(VPATH)}parse.c
 
