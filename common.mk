@@ -399,25 +399,7 @@ ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
 
 configure-ext: $(EXTS_MK)
 
-PARSER_SRCS = parse.y \
-	      parser_bits.h \
-	      parser_node.h \
-	      parser_st.c \
-	      parser_st.h \
-	      parser_value.h \
-	      ruby_parser.c \
-	      rubyparser.h \
-	    # PARSER_SRCS
-
-.PHONY: import-parser
-import-parser:
-	$(ECHO) importing parser
-	for src in $(PARSER_SRCS); do \
-	  cp -u $(srcdir)/ext/parser/$$src $$src; \
-	  cp -u $(srcdir)/ext/parser/$$src $(srcdir)/$$src; \
-	done
-
-build-ext: import-parser $(EXTS_MK)
+build-ext: $(EXTS_MK)
 	$(Q)$(MAKE) -f $(EXTS_MK) $(mflags) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) \
 	    EXTENCS="$(ENCOBJS)" BASERUBY="$(BASERUBY)" MINIRUBY="$(MINIRUBY)" \
 	    $(EXTSTATIC)
@@ -1071,6 +1053,24 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: touch-unicode-files
 
 PHONY:
+
+
+PARSER_SRCS = parse.y \
+	      parser_bits.h \
+	      parser_node.h \
+	      parser_st.c \
+	      parser_st.h \
+	      parser_value.h \
+	      ruby_parser.c \
+	      rubyparser.h \
+	    # PARSER_SRCS
+
+.PHONY: import-parser
+import-parser:
+	$(ECHO) importing parser
+	$(Q)$(BASERUBY) $(tooldir)/import_parser.rb $(PARSER_SRCS)
+
+$(PARSER_SRCS): import-parser
 
 {$(VPATH)}parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
 {$(VPATH)}parse.h: {$(VPATH)}parse.c
