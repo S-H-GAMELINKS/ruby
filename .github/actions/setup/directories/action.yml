@@ -67,7 +67,7 @@ runs:
     # their bash manually installed.
     - shell: bash
       run: |
-        mkdir -p ${{ inputs.srcdir }}
+        mkdir -p ${{ inputs.srcdir }} -m 744
         mkdir -p ${{ inputs.builddir }}
 
     # Did you know that actions/checkout works without git(1)?  We are
