@@ -2,12 +2,15 @@
 #include "internal.h"
 #include "internal/ruby_parser.h"
 #include "internal/symbol.h"
+#include "internal/variable.h"
 #include "internal/warnings.h"
 #include "iseq.h"
+#include "method.h"
 #include "node.h"
 #include "ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "rubyparser.h"
 #include "vm_core.h"
 
 #include "builtin.h"
@@ -145,6 +148,57 @@ static VALUE
 ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
     return rb_ast_parse_file(path, keep_script_lines, error_tolerant, keep_tokens);
+}
+
+VALUE rb_cScopeNode;
+
+static VALUE
+scope_node_new(const NODE *node)
+{
+    VALUE obj = rb_class_new_instance(0, 0, rb_cScopeNode);
+
+    rb_ivar_set(obj, rb_intern("body"), Qnil);
+    rb_ivar_set(obj, rb_intern("args"), Qnil);
+    rb_ivar_set(obj, rb_intern("halo"), Qtrue);
+
+    return obj;
+}
+
+static VALUE
+ast_to_ruby_node_instance(const NODE *node)
+{
+    enum node_type type;
+
+    if (!node) {
+        return Qnil;
+    }
+
+    type = nd_type(node);
+
+    switch (type) {
+    case NODE_SCOPE:
+      return scope_node_new(node);
+    default:
+      return Qnil;
+    }
+}
+
+static VALUE
+ast_parse_done_with_ruby_node(VALUE ast_value)
+{
+    rb_ast_t *ast = rb_ruby_ast_data_get(ast_value);
+
+    return ast_to_ruby_node_instance(ast->body.root);
+}
+
+static VALUE
+ast_s_parse_with_ruby_node(rb_execution_context_t *ec, VALUE module, VALUE str)
+{
+    VALUE ast_value = Qnil;
+    StringValue(str);
+    VALUE vparser = setup_vparser(Qfalse, Qfalse, Qfalse);
+    ast_value = rb_parser_compile_string_path(vparser, Qnil, str, 1);
+    return ast_parse_done_with_ruby_node(ast_value);
 }
 
 static VALUE
@@ -1140,6 +1194,7 @@ ast_location_inspect(rb_execution_context_t *ec, VALUE self)
     return str;
 }
 
+#include "node.rbinc"
 #include "ast.rbinc"
 
 void
@@ -1150,4 +1205,6 @@ Init_ast(void)
     rb_cLocation = rb_define_class_under(rb_mAST, "Location", rb_cObject);
     rb_undef_alloc_func(rb_cNode);
     rb_undef_alloc_func(rb_cLocation);
+
+    rb_cScopeNode = rb_define_class_under(rb_mAST, "ScopeNode", rb_cObject);
 }
