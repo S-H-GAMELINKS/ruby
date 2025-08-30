@@ -499,6 +499,8 @@ ast.$(OBJEXT): {$(VPATH)}iseq.h
 ast.$(OBJEXT): {$(VPATH)}method.h
 ast.$(OBJEXT): {$(VPATH)}missing.h
 ast.$(OBJEXT): {$(VPATH)}node.h
+ast.$(OBJEXT): {$(VPATH)}node.rb
+ast.$(OBJEXT): {$(VPATH)}node.rbinc
 ast.$(OBJEXT): {$(VPATH)}onigmo.h
 ast.$(OBJEXT): {$(VPATH)}oniguruma.h
 ast.$(OBJEXT): {$(VPATH)}prism/ast.h

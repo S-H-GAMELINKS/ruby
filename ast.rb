@@ -58,6 +58,10 @@ module RubyVM::AbstractSyntaxTree
     Primitive.ast_s_parse string, keep_script_lines, error_tolerant, keep_tokens
   end
 
+  def self._parse(string)
+    Primitive.ast_s_parse_with_ruby_node(string)
+  end
+
   #  call-seq:
   #     RubyVM::AbstractSyntaxTree.parse_file(pathname, keep_script_lines: RubyVM.keep_script_lines, error_tolerant: false, keep_tokens: false) -> RubyVM::AbstractSyntaxTree::Node
   #
