@@ -533,6 +533,8 @@ struct parser_params {
     st_table *case_labels;
     rb_node_exits_t *exits;
 
+    rb_node_def_temp_t *def_head; /* current method definition head */
+
     VALUE debug_buffer;
     VALUE debug_output;
 
@@ -1140,7 +1142,7 @@ static rb_node_argspush_t *rb_node_argspush_new(struct parser_params *p, NODE *n
 static rb_node_splat_t *rb_node_splat_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_block_pass_t *rb_node_block_pass_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_defn_t *rb_node_defn_new(struct parser_params *p, ID nd_mid, NODE *nd_defn, const YYLTYPE *loc);
-static rb_node_defs_t *rb_node_defs_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_defn, const YYLTYPE *loc);
+static rb_node_defs_t *rb_node_defs_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_defn, const YYLTYPE *loc, const YYLTYPE *name_loc, const YYLTYPE *def_keyword_loc, const YYLTYPE *operator_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc, const YYLTYPE *equal_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_alias_t *rb_node_alias_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_valias_t *rb_node_valias_new(struct parser_params *p, ID nd_alias, ID nd_orig, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_undef_t *rb_node_undef_new(struct parser_params *p, NODE *nd_undef, const YYLTYPE *loc);
@@ -1248,7 +1250,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_SPLAT(a,loc,op_loc) (NODE *)rb_node_splat_new(p,a,loc,op_loc)
 #define NEW_BLOCK_PASS(b,loc,o_loc) rb_node_block_pass_new(p,b,loc,o_loc)
 #define NEW_DEFN(i,s,loc) (NODE *)rb_node_defn_new(p,i,s,loc)
-#define NEW_DEFS(r,i,s,loc) (NODE *)rb_node_defs_new(p,r,i,s,loc)
+#define NEW_DEFS(r,i,s,loc,n_loc,dk_loc,op_loc,lp_loc,rp_loc,eq_loc,ek_loc) (NODE *)rb_node_defs_new(p,r,i,s,loc,n_loc,dk_loc,op_loc,lp_loc,rp_loc,eq_loc,ek_loc)
 #define NEW_ALIAS(n,o,loc,k_loc) (NODE *)rb_node_alias_new(p,n,o,loc,k_loc)
 #define NEW_VALIAS(n,o,loc,k_loc) (NODE *)rb_node_valias_new(p,n,o,loc,k_loc)
 #define NEW_UNDEF(i,loc) (NODE *)rb_node_undef_new(p,i,loc)
@@ -1312,6 +1314,10 @@ struct RNode_DEF_TEMP {
         NODE *numparam_save;
         struct lex_context ctxt;
     } save;
+
+    /* for location info */
+    YYLTYPE lparen_loc;
+    YYLTYPE rparen_loc;
 };
 
 #define RNODE_DEF_TEMP(node) ((struct RNode_DEF_TEMP *)(node))
@@ -1677,6 +1683,7 @@ restore_defun(struct parser_params *p, rb_node_def_temp_t *temp)
     p->max_numparam = temp->save.max_numparam;
     numparam_pop(p, temp->save.numparam_save);
     clear_block_exit(p, true);
+    p->def_head = NULL;
 }
 
 static void
@@ -2963,6 +2970,9 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                         ($$ = $head->nd_def)->nd_loc = @$;
                         $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                         RNODE_DEFS($$)->nd_defn = $bodystmt;
+                        RNODE_DEFS($$)->lparen_loc = $head->lparen_loc;
+                        RNODE_DEFS($$)->rparen_loc = $head->rparen_loc;
+                        RNODE_DEFS($$)->equal_loc = @3;
                     /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
                     /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
                         local_pop(p);
@@ -3521,7 +3531,7 @@ defs_head	: k_def singleton dot_or_colon
                         SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
                         $$ = def_head_save(p, $k_def);
                         $$->nd_mid = $def_name;
-                        $$->nd_def = NEW_DEFS($singleton, $def_name, 0, &@$);
+                        $$->nd_def = NEW_DEFS($singleton, $def_name, 0, &@$, &@def_name, &@k_def, &@dot_or_colon, &NULL_LOC, &NULL_LOC, &NULL_LOC, &NULL_LOC);
                     /*% ripper: [$:singleton, $:dot_or_colon, $:def_name] %*/
                     }
                 ;
@@ -4660,6 +4670,9 @@ primary		: inline_primary
                     ($$ = $head->nd_def)->nd_loc = @$;
                     $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                     RNODE_DEFS($$)->nd_defn = $bodystmt;
+                    RNODE_DEFS($$)->lparen_loc = $head->lparen_loc;
+                    RNODE_DEFS($$)->rparen_loc = $head->rparen_loc;
+                    RNODE_DEFS($$)->end_keyword_loc = @k_end;
                 /*% ripper: defs!(*$:head[0..2], $:args, $:bodystmt) %*/
                     local_pop(p);
                 }
@@ -6243,6 +6256,11 @@ f_opt_paren_args: f_paren_args
 f_paren_args	: '(' f_args rparen
                     {
                         $$ = $2;
+
+                        if (p->def_head) {
+                            p->def_head->lparen_loc = @1;
+                            p->def_head->rparen_loc = @3;
+                        }
                     /*% ripper: paren!($:2) %*/
                         SET_LEX_STATE(EXPR_BEG);
                         p->command_start = TRUE;
@@ -11246,12 +11264,19 @@ rb_node_defn_new(struct parser_params *p, ID nd_mid, NODE *nd_defn, const YYLTYP
 }
 
 static rb_node_defs_t *
-rb_node_defs_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_defn, const YYLTYPE *loc)
+rb_node_defs_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_defn, const YYLTYPE *loc, const YYLTYPE *name_loc, const YYLTYPE *def_keyword_loc, const YYLTYPE *operator_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc, const YYLTYPE *equal_loc, const YYLTYPE *end_keyword_loc)
 {
     rb_node_defs_t *n = NODE_NEWNODE(NODE_DEFS, rb_node_defs_t, loc);
     n->nd_recv = nd_recv;
     n->nd_mid = nd_mid;
     n->nd_defn = nd_defn;
+    n->name_loc = *name_loc;
+    n->def_keyword_loc = *def_keyword_loc;
+    n->operator_loc = *operator_loc;
+    n->lparen_loc = *lparen_loc;
+    n->rparen_loc = *rparen_loc;
+    n->equal_loc = *equal_loc;
+    n->end_keyword_loc = *end_keyword_loc;
 
     return n;
 }
@@ -12432,6 +12457,9 @@ def_head_save(struct parser_params *p, rb_node_def_temp_t *n)
 {
     n->save.numparam_save = numparam_push(p);
     n->save.max_numparam = p->max_numparam;
+    n->lparen_loc = NULL_LOC;
+    n->rparen_loc = NULL_LOC;
+    p->def_head = n;
     return n;
 }
 

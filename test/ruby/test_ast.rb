@@ -1467,6 +1467,20 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 11], [1, 0, 1, 8]])
     end
 
+    def test_defs_locations
+      node = ast_parse("def self.say(a, b); end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 23], [1, 0, 1, 3], [1, 9, 1, 12], [1, 8, 1, 9], [1, 12, 1, 13], [1, 17, 1, 18], nil, [1, 20, 1, 23]])
+
+      node = ast_parse("def self.hello; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 0, 1, 3], [1, 9, 1, 14], [1, 8, 1, 9], nil, nil, nil, [1, 16, 1, 19]])
+
+      node = ast_parse("def self.greet() = 42")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 21], [1, 0, 1, 3], [1, 9, 1, 14], [1, 8, 1, 9], [1, 14, 1, 15], [1, 15, 1, 16], [1, 17, 1, 18], nil])
+
+      node = ast_parse("def self.hi = 42")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 16], [1, 0, 1, 3], [1, 9, 1, 11], [1, 8, 1, 9], nil, nil, [1, 12, 1, 13], nil])
+    end
+
     def test_dot2_locations
       node = ast_parse("1..2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3]])
