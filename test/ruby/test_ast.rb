@@ -1413,6 +1413,17 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].children[-1].children[-1].locations, [[1, 12, 1, 13], [1, 12, 1, 13]])
     end
 
+    def test_call_locations
+      node = ast_parse("obj.foo(1)")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 3, 1, 4], [1, 4, 1, 7], [1, 7, 1, 8], [1, 9, 1, 10]])
+
+      node = ast_parse("obj.foo")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 3, 1, 4], [1, 4, 1, 7], nil, nil])
+
+      node = ast_parse("obj::foo")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 3, 1, 5], [1, 5, 1, 8], nil, nil])
+    end
+
     def test_break_locations
       node = ast_parse("loop { break 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 14], [1, 7, 1, 12]])

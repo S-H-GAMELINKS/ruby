@@ -1049,7 +1049,7 @@ static void token_info_drop(struct parser_params *p, const char *token, rb_code_
 #define token_column		((int)(p->lex.ptok - p->lex.pbeg))
 
 #define CALL_Q_P(q) ((q) == tANDDOT)
-#define NEW_QCALL(q,r,m,a,loc) (CALL_Q_P(q) ? NEW_QCALL0(r,m,a,loc) : NEW_CALL(r,m,a,loc))
+#define NEW_QCALL(q,r,m,a,loc) (CALL_Q_P(q) ? NEW_QCALL0(r,m,a,loc) : NEW_CALL(r,m,a,loc,&NULL_LOC,&NULL_LOC,&NULL_LOC,&NULL_LOC))
 
 #define lambda_beginning_p() (p->lex.lpar_beg == p->lex.paren_nest)
 
@@ -1095,7 +1095,7 @@ static rb_node_op_asgn2_t *rb_node_op_asgn2_new(struct parser_params *p, NODE *n
 static rb_node_op_asgn_or_t *rb_node_op_asgn_or_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_op_asgn_and_t *rb_node_op_asgn_and_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_op_cdecl_t *rb_node_op_cdecl_new(struct parser_params *p, NODE *nd_head, NODE *nd_value, ID nd_aid, enum rb_parser_shareability shareability, const YYLTYPE *loc);
-static rb_node_call_t *rb_node_call_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
+static rb_node_call_t *rb_node_call_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *message_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static rb_node_opcall_t *rb_node_opcall_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
 static rb_node_fcall_t *rb_node_fcall_new(struct parser_params *p, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
 static rb_node_vcall_t *rb_node_vcall_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc);
@@ -1203,7 +1203,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_OP_ASGN_OR(i,val,loc) (NODE *)rb_node_op_asgn_or_new(p,i,val,loc)
 #define NEW_OP_ASGN_AND(i,val,loc) (NODE *)rb_node_op_asgn_and_new(p,i,val,loc)
 #define NEW_OP_CDECL(v,op,val,share,loc) (NODE *)rb_node_op_cdecl_new(p,v,val,op,share,loc)
-#define NEW_CALL(r,m,a,loc) (NODE *)rb_node_call_new(p,r,m,a,loc)
+#define NEW_CALL(r,m,a,loc,op_loc,msg_loc,open_loc,close_loc) (NODE *)rb_node_call_new(p,r,m,a,loc,op_loc,msg_loc,open_loc,close_loc)
 #define NEW_OPCALL(r,m,a,loc) (NODE *)rb_node_opcall_new(p,r,m,a,loc)
 #define NEW_FCALL(m,a,loc) rb_node_fcall_new(p,m,a,loc)
 #define NEW_VCALL(m,loc) (NODE *)rb_node_vcall_new(p,m,loc)
@@ -1424,8 +1424,8 @@ static void mark_lvar_used(struct parser_params *p, NODE *rhs);
 
 static NODE *call_bin_op(struct parser_params*,NODE*,ID,NODE*,const YYLTYPE*,const YYLTYPE*);
 static NODE *call_uni_op(struct parser_params*,NODE*,ID,const YYLTYPE*,const YYLTYPE*);
-static NODE *new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *op_loc, const YYLTYPE *loc);
-static NODE *new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *op_loc, const YYLTYPE *loc);
+static NODE *new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *call_op_loc, const YYLTYPE *msg_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc, const YYLTYPE *loc);
+static NODE *new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *call_op_loc, const YYLTYPE *msg_loc, const YYLTYPE *loc);
 static NODE *method_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc) {RNODE_ITER(b)->nd_iter = m; b->nd_loc = *loc; return b;}
 
 static bool args_info_empty_p(struct rb_args_info *args);
@@ -3550,7 +3550,7 @@ command_call_value	: value_expr(command_call)
 block_command	: block_call
                 | block_call call_op2 operation2 command_args
                     {
-                        $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        $$ = new_qcall(p, $2, $1, $3, $4, &@2, &@3, &NULL_LOC, &NULL_LOC, &@$);
                     /*% ripper: method_add_arg!(call!($:1, $:2, $:3), $:4) %*/
                     }
                 ;
@@ -3588,28 +3588,28 @@ command		: fcall command_args       %prec tLOWEST
                     }
                 | primary_value call_op operation2 command_args	%prec tLOWEST
                     {
-                        $$ = new_command_qcall(p, $2, $1, $3, $4, 0, &@3, &@$);
+                        $$ = new_command_qcall(p, $2, $1, $3, $4, 0, &@2, &@3, &@$);
                     /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
                     }
                 | primary_value call_op operation2 command_args cmd_brace_block
                     {
-                        $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+                        $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@2, &@3, &@$);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
                 | primary_value tCOLON2 operation2 command_args	%prec tLOWEST
                     {
-                        $$ = new_command_qcall(p, idCOLON2, $1, $3, $4, 0, &@3, &@$);
+                        $$ = new_command_qcall(p, idCOLON2, $1, $3, $4, 0, &@2, &@3, &@$);
                     /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
                     }
                 | primary_value tCOLON2 operation2 command_args cmd_brace_block
                     {
-                        $$ = new_command_qcall(p, idCOLON2, $1, $3, $4, $5, &@3, &@$);
+                        $$ = new_command_qcall(p, idCOLON2, $1, $3, $4, $5, &@2, &@3, &@$);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                    }
                 | primary_value tCOLON2 tCONSTANT '{' brace_body '}'
                     {
                         set_embraced_location($5, &@4, &@6);
-                        $$ = new_command_qcall(p, idCOLON2, $1, $3, 0, $5, &@3, &@$);
+                        $$ = new_command_qcall(p, idCOLON2, $1, $3, 0, $5, &@2, &@3, &@$);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qnil), $:5) %*/
                    }
                 | keyword_super command_args
@@ -5214,7 +5214,27 @@ block_call	: command do_block
                     {
                         bool has_args = $4 != 0;
                         if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
-                        $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+
+                        const YYLTYPE *opening_loc_ptr;
+                        const YYLTYPE *closing_loc_ptr;
+                        rb_code_location_t opening_loc;
+                        rb_code_location_t closing_loc;
+
+                        if (has_args && @4.beg_pos.lineno > 0) {
+                            opening_loc = @4;
+                            opening_loc.end_pos = opening_loc.beg_pos;
+                            opening_loc.end_pos.column++;
+                            closing_loc = @4;
+                            closing_loc.beg_pos = closing_loc.end_pos;
+                            closing_loc.beg_pos.column--;
+                            opening_loc_ptr = &opening_loc;
+                            closing_loc_ptr = &closing_loc;
+                        } else {
+                            opening_loc_ptr = &NULL_LOC;
+                            closing_loc_ptr = &NULL_LOC;
+                        }
+
+                        $$ = new_qcall(p, $2, $1, $3, $4, &@2, &@3, opening_loc_ptr, closing_loc_ptr, &@$);
                     /*% ripper: call!($:1, $:2, $:3) %*/
                         if (has_args) {
                         /*% ripper: method_add_arg!($:$, $:4) %*/
@@ -5223,7 +5243,7 @@ block_call	: command do_block
                 | block_call call_op2 operation2 opt_paren_args brace_block
                     {
                         if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
-                        $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+                        $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@2, &@3, &@$);
                     /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
                         if ($5) {
                         /*% ripper: method_add_block!($:$, $:5) %*/
@@ -5231,7 +5251,7 @@ block_call	: command do_block
                     }
                 | block_call call_op2 operation2 command_args do_block
                     {
-                        $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+                        $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@2, &@3, &@$);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
                 ;
@@ -5247,7 +5267,27 @@ method_call	: fcall paren_args
                     {
                         bool has_args = $4 != 0;
                         if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
-                        $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+
+                        const YYLTYPE *opening_loc_ptr;
+                        const YYLTYPE *closing_loc_ptr;
+                        rb_code_location_t opening_loc;
+                        rb_code_location_t closing_loc;
+
+                        if (has_args && @4.beg_pos.lineno > 0) {
+                            opening_loc = @4;
+                            opening_loc.end_pos = opening_loc.beg_pos;
+                            opening_loc.end_pos.column++;
+                            closing_loc = @4;
+                            closing_loc.beg_pos = closing_loc.end_pos;
+                            closing_loc.beg_pos.column--;
+                            opening_loc_ptr = &opening_loc;
+                            closing_loc_ptr = &closing_loc;
+                        } else {
+                            opening_loc_ptr = &NULL_LOC;
+                            closing_loc_ptr = &NULL_LOC;
+                        }
+
+                        $$ = new_qcall(p, $2, $1, $3, $4, &@2, &@3, opening_loc_ptr, closing_loc_ptr, &@$);
                         nd_set_line($$, @3.end_pos.lineno);
                     /*% ripper: call!($:1, $:2, $:3) %*/
                         if (has_args) {
@@ -5256,18 +5296,33 @@ method_call	: fcall paren_args
                     }
                 | primary_value tCOLON2 operation2 paren_args
                     {
-                        $$ = new_qcall(p, idCOLON2, $1, $3, $4, &@3, &@$);
+                        rb_code_location_t opening_loc = @4;
+                        rb_code_location_t closing_loc = @4;
+                        opening_loc.end_pos = opening_loc.beg_pos;
+                        opening_loc.end_pos.column++;
+                        closing_loc.beg_pos = closing_loc.end_pos;
+                        closing_loc.beg_pos.column--;
+
+                        $$ = new_qcall(p, idCOLON2, $1, $3, $4, &@2, &@3, &opening_loc, &closing_loc, &@$);
                         nd_set_line($$, @3.end_pos.lineno);
                     /*% ripper: method_add_arg!(call!($:1, $:2, $:3), $:4) %*/
                     }
                 | primary_value tCOLON2 operation3
                     {
-                        $$ = new_qcall(p, idCOLON2, $1, $3, 0, &@3, &@$);
+                        $$ = new_qcall(p, idCOLON2, $1, $3, 0, &@2, &@3, &NULL_LOC, &NULL_LOC, &@$);
                     /*% ripper: call!($:1, $:2, $:3) %*/
                     }
                 | primary_value call_op2 paren_args
                     {
-                        $$ = new_qcall(p, $2, $1, idCall, $3, &@2, &@$);
+                        rb_code_location_t opening_loc = @3;
+                        rb_code_location_t closing_loc = @3;
+                        opening_loc.end_pos = opening_loc.beg_pos;
+                        opening_loc.end_pos.column++;
+                        closing_loc.beg_pos = closing_loc.end_pos;
+                        closing_loc.beg_pos.column--;
+
+                        rb_code_location_t msg_loc = @2;
+                        $$ = new_qcall(p, $2, $1, idCall, $3, &@2, &msg_loc, &opening_loc, &closing_loc, &@$);
                         nd_set_line($$, @2.end_pos.lineno);
                     /*% ripper: method_add_arg!(call!($:1, $:2, ID2VAL(idCall)), $:3) %*/
                     }
@@ -5288,7 +5343,10 @@ method_call	: fcall paren_args
                     }
                 | primary_value '[' opt_call_args rbracket
                     {
-                        $$ = NEW_CALL($1, tAREF, $3, &@$);
+                        rb_code_location_t msg_loc = @2;
+                        rb_code_location_t opening_loc = @2;
+                        rb_code_location_t closing_loc = @4;
+                        $$ = NEW_CALL($1, tAREF, $3, &@$, &NULL_LOC, &msg_loc, &opening_loc, &closing_loc);
                         fixpos($$, $1);
                     /*% ripper: aref!($:1, $:3) %*/
                     }
@@ -12098,12 +12156,16 @@ rb_node_regx_new(struct parser_params *p, rb_parser_string_t *string, int option
 }
 
 static rb_node_call_t *
-rb_node_call_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc)
+rb_node_call_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *message_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     rb_node_call_t *n = NODE_NEWNODE(NODE_CALL, rb_node_call_t, loc);
     n->nd_recv = nd_recv;
     n->nd_mid = nd_mid;
     n->nd_args = nd_args;
+    n->call_operator_loc = *call_operator_loc;
+    n->message_loc = *message_loc;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
 
     return n;
 }
@@ -12823,19 +12885,24 @@ call_uni_op(struct parser_params *p, NODE *recv, ID id, const YYLTYPE *op_loc, c
 }
 
 static NODE *
-new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *op_loc, const YYLTYPE *loc)
+new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *call_op_loc, const YYLTYPE *msg_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc, const YYLTYPE *loc)
 {
-    NODE *qcall = NEW_QCALL(atype, recv, mid, args, loc);
-    nd_set_line(qcall, op_loc->beg_pos.lineno);
+    NODE *qcall;
+    if (CALL_Q_P(atype)) {
+        qcall = NEW_QCALL(atype, recv, mid, args, loc);
+    } else {
+        qcall = NEW_CALL(recv, mid, args, loc, call_op_loc, msg_loc, opening_loc, closing_loc);
+    }
+    nd_set_line(qcall, call_op_loc->beg_pos.lineno);
     return qcall;
 }
 
 static NODE*
-new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *op_loc, const YYLTYPE *loc)
+new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *call_op_loc, const YYLTYPE *msg_loc, const YYLTYPE *loc)
 {
     NODE *ret;
     if (block) block_dup_check(p, args, block);
-    ret = new_qcall(p, atype, recv, mid, args, op_loc, loc);
+    ret = new_qcall(p, atype, recv, mid, args, call_op_loc, msg_loc, &NULL_LOC, &NULL_LOC, loc);
     if (block) ret = method_add_block(p, ret, block, loc);
     fixpos(ret, recv);
     return ret;
@@ -12901,7 +12968,7 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
         }
     }
 
-    n = NEW_CALL(node1, tMATCH, NEW_LIST(node2, &node2->nd_loc), loc);
+    n = NEW_CALL(node1, tMATCH, NEW_LIST(node2, &node2->nd_loc), loc, &NULL_LOC, &NULL_LOC, &NULL_LOC, &NULL_LOC);
     nd_set_line(n, line);
     return n;
 }
@@ -14180,7 +14247,7 @@ range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     if (type == NODE_INTEGER) {
         if (!e_option_supplied(p)) rb_warn0L(nd_line(node), "integer literal in flip-flop");
         ID lineno = rb_intern("$.");
-        return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(lineno, loc), loc), loc);
+        return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(lineno, loc), loc), loc, &NULL_LOC, &NULL_LOC, &NULL_LOC, &NULL_LOC);
     }
     return cond0(p, node, COND_IN_FF, loc, true);
 }
@@ -14744,7 +14811,7 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
         }
         else {
             asgn = lhs;
-            rhs = NEW_CALL(gettable(p, vid, &lhs_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
+            rhs = NEW_CALL(gettable(p, vid, &lhs_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc, &NULL_LOC, &NULL_LOC, &NULL_LOC, &NULL_LOC);
             set_nd_value(p, asgn, rhs);
             nd_set_loc(asgn, loc);
         }
@@ -15457,7 +15524,7 @@ parser_append_options(struct parser_params *p, NODE *node)
             NODE *args = NEW_LIST(NEW_GVAR(ifs, LOC), LOC);
             NODE *split = NEW_GASGN(fields,
                                     NEW_CALL(NEW_GVAR(idLASTLINE, LOC),
-                                             rb_intern("split"), args, LOC),
+                                             rb_intern("split"), args, LOC, &NULL_LOC, &NULL_LOC, &NULL_LOC, &NULL_LOC),
                                     LOC);
             node = block_append(p, split, node);
         }

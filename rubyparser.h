@@ -521,6 +521,10 @@ typedef struct RNode_CALL {
     struct RNode *nd_recv;
     ID nd_mid;
     struct RNode *nd_args;
+    rb_code_location_t call_operator_loc;
+    rb_code_location_t message_loc;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_call_t;
 
 typedef struct RNode_OPCALL {

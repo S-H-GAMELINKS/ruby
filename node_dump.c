@@ -612,8 +612,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: obj.foo(1)");
         F_ID(nd_mid, RNODE_CALL, "method id");
         F_NODE(nd_recv, RNODE_CALL, "receiver");
-        LAST_NODE;
         F_NODE(nd_args, RNODE_CALL, "arguments");
+        F_LOC(call_operator_loc, RNODE_CALL);
+        F_LOC(message_loc, RNODE_CALL);
+        F_LOC(opening_loc, RNODE_CALL);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_CALL);
         return;
 
       case NODE_OPCALL:
